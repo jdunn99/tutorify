@@ -5,16 +5,18 @@ import {
   adminProtectedProcedure,
   protectedProcedure,
 } from "@/server/api/trpc";
+import { AppointmentStatus } from "@prisma/client";
 
 const AppointmentData = z.object({
-  name: z.string().nonempty(),
+  title: z.string().nonempty(),
+  description: z.string().nonempty().nullable(),
   tutorId: z.string().cuid(),
   studentId: z.string().cuid().optional(),
   subjectId: z.string().cuid(),
   price: z.number().nonnegative(),
-  startTime: z.date(),
-  endTime: z.date(),
-  duration: z.number(),
+  start: z.date(),
+  end: z.date(),
+  status: z.nativeEnum(AppointmentStatus),
 });
 
 export const appointmentRouter = router({
@@ -62,12 +64,11 @@ export const appointmentRouter = router({
     .input(AppointmentData)
     .mutation(async ({ input, ctx }) => {
       const { prisma, session } = ctx;
-      const { name, tutorId, price, duration, startTime, endTime, subjectId } =
-        input;
+      const { title, tutorId, price, status, start, end, subjectId } = input;
 
       return await prisma.appointment.create({
         data: {
-          name,
+          title,
           tutor: {
             connect: {
               id: tutorId,
@@ -84,9 +85,9 @@ export const appointmentRouter = router({
             },
           },
           price,
-          duration,
-          startTime,
-          endTime,
+          status,
+          start,
+          end,
         },
       });
     }),

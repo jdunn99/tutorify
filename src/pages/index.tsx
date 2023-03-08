@@ -1,17 +1,19 @@
+import React from 'react';
 import Head from "next/head";
 import { api } from "@/utils/api";
-import { useSession } from "next-auth/react";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { Role } from "@prisma/client";
+import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { useRouter } from 'next/router';
 
-export default function Home() {
-  const { data: sessionData } = useSession();
-  const { data } = api.user.get.useQuery();
+export default function Home({
+  session,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const router = useRouter();
 
-  const { mutateAsync: updateRoleAsync } = api.user.updateRole.useMutation();
-
-  async function changeRole(id: string) {
-    await updateRoleAsync({ id, role: Role.USER });
-  }
+  React.useEffect(() => {
+    if(session === null) void signIn();
+  }, [session]);
 
   return (
     <>
@@ -22,21 +24,15 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="h-screen overflow-auto">
-        {JSON.stringify(sessionData)}
+        {JSON.stringify(session)}
         <ul>
-          {data
-            ? data.map((item) => (
-                <li
-                  key={item.id}
-                  className="cursor-pointer p-4 mb-2 bg-gray-100"
-                  onClick={async () => await changeRole(item.id)}
-                >
-                  {item.name} - <span>{item.role}</span>
-                </li>
-              ))
-            : null}
         </ul>
       </main>
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const session = await getSession(ctx);
+  return { props: { session } };
+};

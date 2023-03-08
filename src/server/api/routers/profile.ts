@@ -5,7 +5,7 @@ import {
   protectedProcedure,
   adminProtectedProcedure,
 } from "@/server/api/trpc";
-export const IDInput = z.object({id: z.string().cuid()});
+export const IDInput = z.object({ id: z.string().cuid() });
 
 export const ProfileData = z.object({
   name: z.string(),
@@ -25,7 +25,13 @@ export const profileRouter = router({
 
     return await prisma.profile.findUnique({
       where: { id: input.id },
-      include: { tutorProfile: true },
+      include: {
+        tutorProfile: {
+          include: {
+            availability: true,
+          },
+        },
+      },
     });
   }),
 
@@ -36,7 +42,11 @@ export const profileRouter = router({
 
       const user = await prisma.user.findUnique({
         where: { email: input.email },
-        include: { profile: { include: { tutorProfile: true } } },
+        include: {
+          profile: {
+            include: { tutorProfile: { include: { availability: true } } },
+          },
+        },
       });
 
       if (!user) throw new Error("User not found");

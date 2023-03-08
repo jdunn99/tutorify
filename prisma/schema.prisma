@@ -80,25 +80,29 @@ model Tutor {
 }
 
 model Subject {
-    id        String   @id @default(cuid())
-    name      String   @unique
-    tutors    Tutor[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id           String        @id @default(cuid())
+    name         String        @unique
+    tutors       Tutor[]
+    appointments Appointment[]
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
 }
 
 model Appointment {
     id        String   @id @default(cuid())
-    student   Profile  @relation(fields: [profileId], references: [id])
+    student   Profile  @relation(fields: [studentId], references: [id])
+    studentId String   @unique
     tutor     Tutor    @relation(fields: [tutorId], references: [id])
+    tutorId   String   @unique
+    subject   Subject  @relation(fields: [subjectId], references: [id])
+    subjectId String @unique
+    name      String
     startTime DateTime
     endTime   DateTime
     duration  Int
     price     Float
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    profileId String   @unique
-    tutorId   String   @unique
 }
 
 model User {

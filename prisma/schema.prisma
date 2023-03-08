@@ -65,18 +65,29 @@ model Profile {
     biography    String?
     createdAt    DateTime      @default(now())
     updatedAt    DateTime      @updatedAt
-    Appointment  Appointment[]
+    appointment  Appointment[]
 
     @@index([userId])
 }
 
 model Tutor {
-    id          String        @id @default(cuid())
-    profile     Profile       @relation(fields: [profileId], references: [id])
-    profileId   String        @unique
-    hourlyRate  Float         @default(0)
-    subjects    Subject[]
-    Appointment Appointment[]
+    id           String         @id @default(cuid())
+    profile      Profile        @relation(fields: [profileId], references: [id])
+    profileId    String         @unique
+    hourlyRate   Float          @default(0)
+    subjects     Subject[]
+    appointments Appointment[]
+    availability Availability[]
+}
+
+model Availability {
+    id      String   @id @default(cuid())
+    tutor   Tutor    @relation(fields: [tutorId], references: [id])
+    tutorId String
+    start   DateTime
+    end     DateTime
+
+    @@index([tutorId])
 }
 
 model Subject {
@@ -89,20 +100,26 @@ model Subject {
 }
 
 model Appointment {
-    id        String   @id @default(cuid())
-    student   Profile  @relation(fields: [studentId], references: [id])
-    studentId String   @unique
-    tutor     Tutor    @relation(fields: [tutorId], references: [id])
-    tutorId   String   @unique
-    subject   Subject  @relation(fields: [subjectId], references: [id])
-    subjectId String @unique
-    name      String
-    startTime DateTime
-    endTime   DateTime
-    duration  Int
-    price     Float
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id          String            @id @default(cuid())
+    student     Profile           @relation(fields: [studentId], references: [id])
+    studentId   String            @unique
+    tutor       Tutor             @relation(fields: [tutorId], references: [id])
+    tutorId     String
+    subject     Subject           @relation(fields: [subjectId], references: [id])
+    subjectId   String
+    title       String
+    description String?
+    start       DateTime
+    end         DateTime
+    price       Float
+    status      AppointmentStatus @default(SCHEDULED)
+    // payment      Payment?
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+
+    @@index([studentId])
+    @@index([tutorId])
+    @@index([subjectId])
 }
 
 model User {
@@ -138,4 +155,10 @@ enum SubjectLevel {
     HIGH_SCHOOL
     AP
     COLLEGE
+}
+
+enum AppointmentStatus {
+    SCHEDULED
+    CANCELLED
+    COMPLETED
 }

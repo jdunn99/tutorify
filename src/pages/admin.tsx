@@ -7,6 +7,7 @@ import {
   type FormFieldTypes,
   validate,
 } from "@/utils/hooks/useFormReducer";
+import { api } from "@/utils/api";
 
 export const ProfileData = z.object({
   name: z.string(),
@@ -17,6 +18,7 @@ export const ProfileData = z.object({
 
 function Admin({ session }: WithSession) {
   const { state, dispatch } = useForm(ProfileData);
+  const { data: profileData } = api.user.get.useQuery();
 
   function onChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
@@ -25,7 +27,7 @@ function Admin({ session }: WithSession) {
   }
 
   async function onSubmit() {
-    const values = validate(state, ProfileData)
+    const values = validate(state, ProfileData);
     console.log(values);
   }
 
@@ -45,10 +47,10 @@ function Admin({ session }: WithSession) {
           />
         );
       })}
-      <div>{JSON.stringify({state})}</div>
+      <div>{JSON.stringify(profileData)}</div>
       <button onClick={onSubmit}>Test</button>
     </>
   );
 }
 
-export default withAuth(Admin, { roles: [Role.USER] });
+export default withAuth(Admin);

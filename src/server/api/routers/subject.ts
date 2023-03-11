@@ -32,11 +32,14 @@ export const subjectRouter = router({
       const { prisma } = ctx;
       const { name } = input;
 
-      return await prisma.subject.create({
+      const subject = await prisma.subject.create({
         data: {
           name,
         },
       });
+
+      console.log(subject);
+      return subject;
     }),
 
   // Update a given Subject by ID. @admin

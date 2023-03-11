@@ -54,6 +54,19 @@ export const profileRouter = router({
       return user.profile;
     }),
 
+  create: protectedProcedure
+    .input(ProfileData)
+    .mutation(async ({ input, ctx }) => {
+      const { prisma, session } = ctx;
+
+      return await prisma.profile.create({
+        data: {
+          ...input,
+          user: { connect: { id: session.user.id } },
+        },
+      });
+    }),
+
   // Create or Update a Profile in the same method.
   upsertProfile: protectedProcedure
     .input(ProfileData.partial())

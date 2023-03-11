@@ -38,6 +38,9 @@ export const userRouter = router({
       });
     }),
 
+  create: superUserProtectedProcedure
+  .mutation(() => {}),
+
   // Only a Superuser should be able to change Roles, etc.
   updateRole: superUserProtectedProcedure
     .input(IDInput.merge(z.object({ role: z.nativeEnum(Role) })))

@@ -49,6 +49,7 @@ export function useAdminMutation({ endpoint, schema }: AdminOptions) {
   const { mutateAsync } = api[endpoint].create.useMutation({
     onSuccess: async (newData: unknown) => {
       // Update the query data with the new data.
+      // Breaks type-safety but it works for now.
       const queryKey = getQueryKey(
         api[endpoint].get as any,
         undefined,
@@ -107,3 +108,5 @@ export function useAdminQuery<T>({
     isLoading,
   };
 }
+
+

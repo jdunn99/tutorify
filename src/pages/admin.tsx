@@ -1,13 +1,10 @@
 import z from "zod";
 import withAuth, { type WithSession } from "@/utils/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import { Subject } from "@prisma/client";
-import { useForm, validate } from "@/utils/hooks/useFormReducer";
-import {
-  useAdminData,
-  useAdminMutation,
-  useAdminQuery,
-} from "@/utils/hooks/useAdminData";
+import { useAdminMutation, useAdminQuery } from "@/utils/hooks/useAdminData";
+import Link from "next/link";
+import React from "react";
+import { Sidebar } from "@/components/sidebar";
 
 export const ProfileData = z.object({
   name: z.string(),
@@ -22,11 +19,11 @@ const SubjectSchema = z.object({
 function Subject({ session }: WithSession) {
   const { data: subjectData, isLoading } = useAdminQuery<Subject[]>({
     session,
-    endpoint: "subject",
+    endpoint: "user",
   });
   const { state, onChange, onSubmit } = useAdminMutation({
     schema: SubjectSchema,
-    endpoint: "subject",
+    endpoint: "user",
   });
 
   if (isLoading) return <div>Loading...</div>;
@@ -59,21 +56,16 @@ function Subject({ session }: WithSession) {
   ) : null;
 }
 
+
 function Admin({ session }: WithSession) {
-  const { state, dispatch } = useForm(ProfileData);
-
-  function onChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = event.target;
-
-    dispatch({ type: "UPDATE_FIELD", payload: { field: name, value } });
-  }
-
-  async function onSubmit() {
-    const values = validate(state, ProfileData);
-    console.log(values);
-  }
-
-  return <Subject session={session} />;
+  return (
+    <div className="flex">
+      <Sidebar />
+      <div className="h-screen overflow-auto bg-white flex-1">
+        <p>Hi</p>
+      </div>
+    </div>
+  );
 }
 
 export default withAuth(Admin);

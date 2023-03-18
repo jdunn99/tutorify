@@ -5,6 +5,9 @@ import { useAdminMutation, useAdminQuery } from "@/utils/hooks/useAdminData";
 import Link from "next/link";
 import React from "react";
 import { Sidebar } from "@/components/sidebar";
+import { ProfileLayout } from "@/components/layout";
+import { UserDashboard } from "@/components/profile/dashboards";
+import { api } from "@/utils/api";
 
 export const ProfileData = z.object({
   name: z.string(),
@@ -56,15 +59,22 @@ function Subject({ session }: WithSession) {
   ) : null;
 }
 
-
 function Admin({ session }: WithSession) {
+  const [active, setActive] = React.useState<string>("Profile");
+
+  function onClick(target: string) {
+    setActive(target);
+  }
+
+  const { data } = api.profile.get.useQuery();
+
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="h-screen overflow-auto bg-white flex-1">
-        <p>Hi</p>
-      </div>
-    </div>
+    <ProfileLayout active={active} onClick={onClick}>
+      <div className="space-y-8">
+        {JSON.stringify(data)}
+        <UserDashboard />{" "}
+      </div>{" "}
+    </ProfileLayout>
   );
 }
 

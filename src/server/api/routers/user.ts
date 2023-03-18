@@ -3,10 +3,12 @@ import {
   router,
   adminProtectedProcedure,
   superUserProtectedProcedure,
+  publicProcedure,
 } from "@/server/api/trpc";
 import { Role } from "@prisma/client";
 import { IDInput } from "./profile";
-
+import bcrypt from "bcrypt";
+import { env } from "@/env.mjs";
 
 /*
  * Handles any API requests regarding a User.
@@ -38,8 +40,36 @@ export const userRouter = router({
       });
     }),
 
-  create: superUserProtectedProcedure
-  .mutation(() => {}),
+  register: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { prisma } = ctx;
+      const { email, password, name } = input;
+
+      const hashed = await bcrypt.hash(password, parseInt(env.SALT_ROUNDS));
+
+      const user = await prisma.user.create({
+        data: { email, password: hashed, name },
+      });
+
+      if (!user) throw new Error("Something went wrong");
+
+      // Create account for next-auth.
+      await prisma.account.create({
+        data: {
+          type: "Credentials",
+          provider: "Credentials",
+          userId: user.id,
+          providerAccountId: user.id,
+        },
+      });
+    }),
 
   // Only a Superuser should be able to change Roles, etc.
   updateRole: superUserProtectedProcedure

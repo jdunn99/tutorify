@@ -23,6 +23,7 @@
     "eslint-config-next": "13.2.3",
     "next": "13.2.3",
     "next-auth": "^4.20.1",
+    "next-superjson-plugin": "^0.5.6",
     "react": "18.2.0",
     "react-accordion": "link:@types/radix-ui/react-accordion",
     "react-dom": "18.2.0",

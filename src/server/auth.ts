@@ -25,17 +25,34 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    session({ session, user }) {
+    jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as User).role;
+      }
+      return token;
+    },
+    session({ session, token, user }) {
+      const { user: sessionUser } = session;
+      const { id: tokenId, role: tokenRole } = token;
+
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = (user as User).role;
-        // session.user.role = user.role; <-- put other properties on the session here
+        const { id: userId, role: userRole } = user as User || {};
+        sessionUser.id = userId || tokenId as string;
+        sessionUser.role = userRole || tokenRole;
       }
       return session;
     },
   },
   adapter: PrismaAdapter(prisma),
+  pages: {
+    signIn: "/auth/signin",
+  },
+  secret: env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -55,7 +72,8 @@ export const authOptions: NextAuthOptions = {
         const { password: hashed } = user;
         if (!hashed) return null; // User has not set a password.
 
-        if (await bcrypt.compare(password, hashed)) return user;
+        if (await bcrypt.compare(password, hashed))
+          return { ...user, role: user.role };
 
         return null;
       },

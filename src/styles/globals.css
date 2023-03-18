@@ -6,7 +6,7 @@
   color: black;
 }
 
-.SidebarAccordion[data-state='open'] > .SidebarTriggerIcon {
+.SidebarAccordion[data-state='open'] > div > .SidebarTriggerIcon {
   color: #0ea5e9;
 }
 
@@ -15,6 +15,15 @@
 }
 .SidebarAccordionContent[data-state='closed'] {
   animation: slideUp 300ms cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.SidebarAccordion > .AccordionChevron {
+  color: var(--violet10);
+  transition: transform 300ms cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.SidebarAccordion[data-state='open'] > .AccordionChevron {
+  transform: rotate(180deg);
 }
 
 @keyframes slideDown {

@@ -54,6 +54,15 @@ export const profileRouter = router({
       return user.profile;
     }),
 
+  getFromSession: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma, session } = ctx;
+    const { user } = session;
+
+    return await prisma.profile.findUnique({
+      where: { userId: user.id },
+    });
+  }),
+
   create: protectedProcedure
     .input(ProfileData)
     .mutation(async ({ input, ctx }) => {

@@ -1,20 +1,17 @@
-import React from 'react';
+import React from "react";
 import Head from "next/head";
-import { api } from "@/utils/api";
-import { getSession, signIn, useSession } from "next-auth/react";
+import { getSession } from "next-auth/react";
 import { Role } from "@prisma/client";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { useRouter } from 'next/router';
+import {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  InferGetServerSidePropsType,
+} from "next";
+import { prisma } from "@/server/prisma";
 
 export default function Home({
   session,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const router = useRouter();
-
-  React.useEffect(() => {
-    if(session === null) void signIn();
-  }, [session]);
-
   return (
     <>
       <Head>
@@ -25,14 +22,30 @@ export default function Home({
       </Head>
       <main className="h-screen overflow-auto">
         {JSON.stringify(session)}
-        <ul>
-        </ul>
+        <ul></ul>
       </main>
     </>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const session = await getSession(ctx);
-  return { props: { session } };
-};
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const session = await getSession(context);
+
+  if (!session) return { redirect: { destination: "/auth/signin" } };
+
+  // if they don't have a profile. create one.
+  await prisma.profile.upsert({
+    where: { userId: session.user.id },
+    update: {},
+    create: {
+      name: session.user.name || "",
+      user: { connect: { id: session.user.id } },
+    },
+  });
+
+  return {
+    props: {
+      session,
+    },
+  };
+}

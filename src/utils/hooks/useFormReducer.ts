@@ -40,6 +40,8 @@ function useParsedState<T extends z.ZodObject<any>>(schema: T): FormState {
             break;
         }
 
+        if(key.split(" ").includes("password")) type = "password";
+
         acc[key] = {
           value,
           config: {
@@ -173,5 +175,16 @@ function reducer(state: FormState, action: Action): FormState {
  */
 export function useForm<T extends z.ZodObject<any>>(schema: T) {
   const [state, dispatch] = React.useReducer(reducer, useParsedState(schema));
-  return { state, dispatch };
+
+  /*
+   * Updates the form state when a field value changes.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event The event object containing the field name and value.
+   */
+  function onChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target;
+
+    dispatch({ type: "UPDATE_FIELD", payload: { field: name, value } });
+  }
+  return { state, dispatch, onChange };
 }

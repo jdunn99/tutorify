@@ -25,29 +25,6 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as User).role;
-      }
-      return token;
-    },
-    session({ session, token, user }) {
-      const { user: sessionUser } = session;
-      const { id: tokenId, role: tokenRole } = token;
-
-      if (session.user) {
-        const { id: userId, role: userRole } = user as User || {};
-        sessionUser.id = userId || tokenId as string;
-        sessionUser.role = userRole || tokenRole;
-      }
-      return session;
-    },
-  },
   adapter: PrismaAdapter(prisma),
   pages: {
     signIn: "/auth/signin",
@@ -60,7 +37,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text", placeholder: "email" },
         password: { label: "Password", type: "text", placeholder: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials) return null;
 
         const { email, password } = credentials;
@@ -72,8 +49,7 @@ export const authOptions: NextAuthOptions = {
         const { password: hashed } = user;
         if (!hashed) return null; // User has not set a password.
 
-        if (await bcrypt.compare(password, hashed))
-          return { ...user, role: user.role };
+        if (await bcrypt.compare(password, hashed)) return user;
 
         return null;
       },
@@ -89,16 +65,33 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
-    /**
-     * ...add more providers here.
-     *
-     * Most other providers require a bit more work than the Discord provider. For example, the
-     * GitHub provider requires you to add the `refresh_token_expires_in` field to the Account
-     * model. Refer to the NextAuth.js docs for the provider you want to use. Example:
-     *
-     * @see https://next-auth.js.org/providers/github
-     */
   ],
+  session: {
+    strategy: "jwt",
+  },
+  callbacks: {
+    jwt({ token, user }) {
+      console.log(token);
+      if (user) {
+        token.id = user.id;
+        token.role = (user as User).role;
+      }
+      return token;
+    },
+    session({ session, token, user }) {
+      const { user: sessionUser } = session;
+      const { id: tokenId, role: tokenRole } = token;
+
+      console.log(user);
+
+      if (session.user) {
+        const { id: userId, role: userRole } = (user as User) || {};
+        sessionUser.id = userId || (tokenId as string);
+        sessionUser.role = userRole || tokenRole;
+      }
+      return session;
+    },
+  },
 };
 
 /**

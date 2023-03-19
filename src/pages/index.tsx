@@ -1,13 +1,35 @@
 import React from "react";
 import Head from "next/head";
-import { getSession } from "next-auth/react";
-import { Role } from "@prisma/client";
+import { getSession, signOut } from "next-auth/react";
 import {
   GetServerSideProps,
   GetServerSidePropsContext,
   InferGetServerSidePropsType,
 } from "next";
 import { prisma } from "@/server/prisma";
+import { Button } from "@/components/button";
+import { useAdminMutation, useAdminQuery } from "@/utils/hooks/useAdminData";
+import { z } from "zod";
+import { Subject } from "@prisma/client";
+import { api } from "@/utils/api";
+import { Input } from "@/components/input";
+import { Search } from "@/components/search";
+
+const SubjectSchema = z.object({ name: z.string() });
+
+function debounce(func: Function, delay: number) {
+  let timerId: ReturnType<typeof setTimeout> | null;
+
+  return function debounced(...args: any[]) {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+    timerId = setTimeout(() => {
+      func(...args);
+      timerId = null;
+    }, delay);
+  };
+}
 
 export default function Home({
   session,
@@ -20,10 +42,23 @@ export default function Home({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="h-screen overflow-auto">
-        {JSON.stringify(session)}
-        <ul></ul>
-      </main>
+      <section className="bg-slate-100 h-screen">
+        <div className="py-8 px-4 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12">
+          <h1 className="mb-8 text-4xl font-extrabold tracking-tight leading-none text-slate-900 md:text-5xl lg:text-6xl">
+            Get expert online tutoring
+            <br /> in any subject.
+          </h1>
+          <p className="mb-8 text-lg font-normal text-slate-600 lg:text-xl sm:px-16 xl:px-48">
+            Here at <span className="font-bold text-sky-600">tutorify</span> we
+            provide personalized online tutoring, tailored to your individual
+            needs and learning style.
+          </p>
+          <div className="flex flex-col mb-8 lg:mb-16 space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
+            <Search />{" "}
+          </div>
+          <div className="px-4 mx-auto text-center md:max-w-screen-md lg:max-w-screen-lg lg:px-36"></div>
+        </div>
+      </section>
     </>
   );
 }

@@ -25,6 +25,18 @@ export const subjectRouter = router({
       });
     }),
 
+  autocomplete: publicProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { prisma } = ctx;
+      const { query } = input;
+
+      return await prisma.subject.findMany({
+        where: { name: { contains: query } },
+        select: { name: true },
+      });
+    }),
+
   // Create a new Subject. @admin
   create: adminProtectedProcedure
     .input(z.object({ name: z.string().nonempty() }))

@@ -79,7 +79,8 @@ export function useAdminMutation({ endpoint, schema }: AdminOptions) {
   /**
    * Validates and submits the form data to the endpoint.
    */
-  async function onSubmit() {
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const validated = validate(state, schema);
     await mutateAsync(validated as any);
   }

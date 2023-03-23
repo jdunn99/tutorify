@@ -6,6 +6,7 @@ import React from "react";
 import { MdSearch } from "react-icons/md";
 import { Button } from "./button";
 import { Input } from "./input";
+import { Spinner } from "./loading";
 
 /**
  * Creates a debounced function that delays invoking the given function until after `delay` milliseconds have elapsed since the last time it was invoked.
@@ -38,7 +39,7 @@ export function Search() {
   const [focused, setFocused] = React.useState<boolean>(false);
 
   const [query, setQuery] = React.useState<string>("");
-  const { data: autocomplete } = api.subject.autocomplete.useQuery(
+  const { data: autocomplete, isLoading } = api.subject.autocomplete.useQuery(
     { query },
     { enabled: query.length > 1 }
   );
@@ -86,17 +87,25 @@ export function Search() {
         </Button>
       </form>
 
-      {autocomplete && autocomplete.length > 0 && focused ? (
+      {query.length > 2 && focused ? (
         <div className="absolute text-left top-14 left-0 right-0 overflow-y-auto bg-white z-50 rounded shadow-sm border border-slate-200">
-          {autocomplete.map(({ name }) => (
-            <Link
-              key={name}
-              className="block cursor-pointer hover:bg-sky-50 p-4"
-              href={`/search?query=${name}`}
-            >
-              {name}
-            </Link>
-          ))}
+          {isLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <Spinner />
+            </div>
+          ) : autocomplete && autocomplete.length > 0 ? (
+            autocomplete?.map(({ name }) => (
+              <Link
+                key={name}
+                className="block cursor-pointer hover:bg-sky-50 p-4"
+                href={`/search?query=${name}`}
+              >
+                {name}
+              </Link>
+            ))
+          ) : (
+            <p className='p-4'>No results found. </p>
+          )}
         </div>
       ) : null}
     </div>

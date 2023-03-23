@@ -10,20 +10,26 @@ import { z } from "zod";
 import React from "react";
 import { Button } from "@/components/button";
 import Link from "next/link";
+import { Input } from "@/components/input";
 
 export const CredentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email().describe("email"),
+  password: z.string().min(6).describe("password"),
 });
 
 export default function SignIn({
   providers,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const { state, onChange } = useForm(CredentialsSchema);
+  const { state, onChange, dispatch } = useForm(CredentialsSchema);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await signIn("credentials", { ...validate(state, CredentialsSchema) });
+
+    const { result, errors } = validate(state, CredentialsSchema);
+    if(errors) dispatch({type: "VALIDATE", payload: { errors }});
+    if(typeof result === "undefined") return;
+
+    await signIn("credentials", result);
   }
 
   return (
@@ -42,12 +48,12 @@ export default function SignIn({
                   <div key={name}>
                     <label htmlFor={name} className="block text-sm font-medium">
                       {name}
-                      <input
-                        className="g-gray-50 border border-gray-300 mt-2 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                      <Input
+                        className="mt-2 w-full"
                         type={config.type}
                         name={name}
                         onChange={onChange}
-                        value={value}
+                        value={typeof value === "boolean" ? "" : value}
                         placeholder={name}
                       />
                     </label>
@@ -73,10 +79,15 @@ export default function SignIn({
                 </div>
               )
             )}
-          <p className='text-sm text-center'>
-            Don&apos;t have an account? Sign up{" "}
-            <Link href="/auth/register" className='font-bold text-sky-600 hover:underline'>here.</Link>
-          </p>
+            <p className="text-sm text-center">
+              Don&apos;t have an account? Sign up{" "}
+              <Link
+                href="/auth/register"
+                className="font-bold text-sky-600 hover:underline"
+              >
+                here.
+              </Link>
+            </p>
           </div>
         </div>
       </div>

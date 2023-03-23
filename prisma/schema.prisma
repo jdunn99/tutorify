@@ -12,24 +12,19 @@ datasource db {
 }
 
 model Account {
-    id                       String   @id @default(cuid())
-    createdAt                DateTime @default(now())
-    updatedAt                DateTime @updatedAt
-    userId                   String
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String?  @db.VarChar(500)
-    access_token             String?  @db.VarChar(500)
-    refresh_token_expires_in Int?
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String?  @db.Text
-    session_state            String?
-    oauth_token_secret       String?
-    oauth_token              String?
-    user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    id                String  @id @default(cuid())
+    userId            String
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String?
+    session_state     String?
+    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([provider, providerAccountId])
     @@index([userId])
@@ -76,13 +71,73 @@ model Profile {
 }
 
 model Tutor {
-    id           String         @id @default(cuid())
-    profile      Profile        @relation(fields: [profileId], references: [id])
-    profileId    String         @unique
-    hourlyRate   Float          @default(0)
-    subjects     Subject[]
-    appointments Appointment[]
-    availability Availability[]
+    id                    String         @id @default(cuid())
+    profile               Profile        @relation(fields: [profileId], references: [id])
+    profileId             String         @unique
+    hourlyRate            Float          @default(0)
+    subjects              Subject[]
+    appointments          Appointment[]
+    availability          Availability[]
+    status                TutorStatus
+    age                   Int
+    phone                 String
+    location              Location       @relation(fields: [locationId], references: [id])
+    locationId            String         @unique
+    isWorkAuthorized      Boolean
+    needsVisaSponsorship  Boolean
+    hasVisaDependency     Boolean
+    hasInternetConnection Boolean
+    hasTechnicalKnowledge Boolean
+    hasMicrophone         Boolean
+    hasWebcam             Boolean
+    education             Education      @relation(fields: [educationId], references: [id])
+    educationId           String         @unique
+    employment            Employment     @relation(fields: [employmentId], references: [id])
+    employmentId          String         @unique
+    createdAt             DateTime       @default(now())
+    updatedAt             DateTime       @updatedAt
+    resume                String?
+}
+
+model Education {
+    id           String @id @default(cuid())
+    school       String
+    degree       String
+    fieldOfStudy String
+    yearStarted  String
+    yearEnded    String
+    monthStarted String
+    monthEnded   String
+    tutor        Tutor?
+}
+
+model Employment {
+    id           String @id @default(cuid())
+    title        String
+    type         String
+    companyName  String
+    yearStarted  String
+    yearEnded    String
+    monthStarted String
+    monthEnded   String
+    tutor        Tutor?
+}
+
+model Location {
+    id       String  @id @default(cuid())
+    address  String
+    address2 String?
+    city     String
+    state    String
+    zip      String
+    country  String
+    tutor    Tutor?
+}
+
+enum TutorStatus {
+    ACTIVE
+    PENDING
+    DISABLED
 }
 
 model Availability {

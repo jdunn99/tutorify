@@ -1,5 +1,46 @@
-import React, { ChangeEventHandler } from "react";
+import React from "react";
 import { z } from "zod";
+
+function parseState<T extends z.ZodObject<any>>(schema: T): FormState {
+  if (schema === undefined) return {} as FormState;
+  return Object.keys(schema.shape).reduce((acc: FormState, key: string) => {
+    const def = (schema.shape[key as keyof T] satisfies z.ZodObjectDef)._def;
+
+    let { description, typeName, defaultValue, innerType } = def;
+
+    if (innerType) typeName = innerType._def.typeName;
+
+    // Parse the type and default value.
+    // TODO: Convert switch to function & add more use cases.
+    let type: FormFieldTypes;
+    let value: string | number;
+
+    switch (typeName) {
+      case z.ZodFirstPartyTypeKind.ZodNumber:
+        type = "number";
+        value = 0;
+        break;
+      case z.ZodFirstPartyTypeKind.ZodBoolean:
+        type = "checkbox";
+        value = "";
+        break;
+      default:
+        type = "text";
+        value = "";
+        break;
+    }
+
+    acc[key] = {
+      value: defaultValue ? defaultValue() : value,
+      config: {
+        type: description || type,
+        label: key,
+      },
+    };
+
+    return acc;
+  }, {});
+}
 
 /**
  *  Parses the schema and returns an initial state object for a form based on the schema.
@@ -7,54 +48,20 @@ import { z } from "zod";
  *  @template T - The type of the Zod schema.
  *  @param {T} schema - The Zod schema to parse.
  */
-function useParsedState<T extends z.ZodObject<any>>(schema: T): FormState {
-  return React.useMemo(
-    () =>
-      Object.keys(schema.shape).reduce((acc: FormState, key: string) => {
-        const def = (schema.shape[key as keyof T] satisfies z.ZodObjectDef)
-          ._def;
-        const zodType: z.ZodFirstPartyTypeKind = def.typeName;
-
-        // Parse the type and default value.
-        // TODO: Convert switch to function & add more use cases.
-        let type: FormFieldTypes;
-        let value: string | number;
-        switch (zodType) {
-          case z.ZodFirstPartyTypeKind.ZodNumber:
-            type = "number";
-            value = 0;
-            break;
-          default:
-            switch (key as "email" | "password") {
-              case "password":
-                type = "password";
-                break;
-              case "email":
-                type = "text";
-                break;
-              default:
-                type = "text";
-                break;
-            }
-            value = "";
-            break;
-        }
-
-        if(key.split(" ").includes("password")) type = "password";
-
-        acc[key] = {
-          value,
-          config: {
-            type,
-            label: key,
-          },
-        };
-
-        return acc;
-      }, {}),
-    [schema]
-  );
+export function useParsedState<T extends z.ZodObject<any>>(
+  schema: T
+): FormState {
+  return React.useMemo(() => {
+    return parseState(schema);
+  }, [schema]);
 }
+
+export type ValidatedError = Record<keyof FormFields, string>;
+
+export type ValidatedResult<T> = {
+  result?: T;
+  errors?: Record<keyof FormFields, string>;
+};
 
 /**
  * Validates a form state using a Zod schema.
@@ -67,14 +74,26 @@ function useParsedState<T extends z.ZodObject<any>>(schema: T): FormState {
 export function validate<T extends z.ZodTypeAny>(
   state: FormState,
   schema: T
-): z.infer<T> {
+): ValidatedResult<z.infer<T>> {
   const result: z.infer<T> = {};
 
   Object.entries(state).forEach(([name, { value }]) => {
     result[name] = value;
   });
 
-  return schema.parse(result);
+  try {
+    return { result: schema.parse(result) };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const { issues } = error;
+      const errors: ValidatedError = {};
+
+      issues.forEach(({ message, path }) => (errors[path[0]] = message));
+      return { errors };
+    }
+
+    return {};
+  }
 }
 
 /**
@@ -97,7 +116,7 @@ export type FormFieldTypes =
  * @property {string} label - The label of the form field.
  * @typedef {object} FieldConfig
  */
-type FieldConfig<T extends FormFieldTypes> = {
+export type FieldConfig<T extends FormFieldTypes> = {
   type: T;
   label: string;
 };
@@ -108,7 +127,7 @@ type FieldConfig<T extends FormFieldTypes> = {
  * @template K - The keys of the form.
  * @typedef {Record<K, FieldConfig<FormFieldTypes>>} FormFields
  */
-type FormFields = Record<string, FieldConfig<FormFieldTypes>>;
+export type FormFields = Record<string, FieldConfig<FormFieldTypes>>;
 
 /**
  * Defines the state of a form.
@@ -119,8 +138,9 @@ type FormFields = Record<string, FieldConfig<FormFieldTypes>>;
  */
 export type FormState = {
   [K in keyof FormFields]: {
-    value: string | number;
+    value: string | number | boolean;
     config: FormFields[K];
+    error?: string;
   };
 };
 
@@ -136,9 +156,11 @@ export type FormState = {
 type Action =
   | {
       type: "UPDATE_FIELD";
-      payload: { field: keyof FormFields; value: string };
+      payload: { field: keyof FormFields; value: string | number | boolean };
     }
-  | { type: "RESET_FORM"; payload: { initialState: FormState } };
+  | { type: "RESET_FORM"; payload: { initialState: FormState } }
+  | { type: "VALIDATE"; payload: { errors: ValidatedError } }
+  | { type: "RESUME"; payload: { key: string } };
 
 /**
  * Defines the reducer function for a form state.
@@ -158,11 +180,33 @@ function reducer(state: FormState, action: Action): FormState {
         [field]: {
           ...state[field],
           value,
+          error: undefined,
         },
       };
+    case "VALIDATE":
+      const { errors } = payload;
+      const temp = Object.assign({}, state);
+
+      Object.entries(errors).forEach(([key, value]) => {
+        temp[key] = {
+          ...temp[key],
+          error: value,
+        };
+      });
+
+      return temp;
     case "RESET_FORM":
       const { initialState } = payload;
       return initialState;
+    // Fetch from localStorage and then return the statek
+    case "RESUME":
+      const { key } = payload;
+      const saved = localStorage.getItem(key);
+
+      // key not found. return
+      if (saved === null) return state;
+
+      return JSON.parse(saved) as typeof state;
     default:
       return state;
   }
@@ -173,18 +217,30 @@ function reducer(state: FormState, action: Action): FormState {
  * @template T - The type of the Zod schema used to validate the form.
  * @param {T} schema - The Zod schema used to validate the form.
  */
-export function useForm<T extends z.ZodObject<any>>(schema: T) {
+export function useForm<T extends z.ZodObject<any>>(schema: T, key?: string) {
   const [state, dispatch] = React.useReducer(reducer, useParsedState(schema));
+
+  React.useEffect(() => {
+    if (typeof key !== "undefined")
+      dispatch({ type: "RESUME", payload: { key } });
+  }, [key]);
 
   /*
    * Updates the form state when a field value changes.
    *
    * @param {React.ChangeEvent<HTMLInputElement>} event The event object containing the field name and value.
    */
-  function onChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = event.target;
+  function onChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    let { name, value, type } = event.target;
 
-    dispatch({ type: "UPDATE_FIELD", payload: { field: name, value } });
+    dispatch({
+      type: "UPDATE_FIELD",
+      payload: {
+        field: name,
+        value: type === "number" ? parseInt(value) : value,
+      },
+    });
   }
+
   return { state, dispatch, onChange };
 }

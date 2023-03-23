@@ -15,25 +15,11 @@ import { api } from "@/utils/api";
 import { Input } from "@/components/input";
 import { Search } from "@/components/search";
 
-const SubjectSchema = z.object({ name: z.string() });
-
-function debounce(func: Function, delay: number) {
-  let timerId: ReturnType<typeof setTimeout> | null;
-
-  return function debounced(...args: any[]) {
-    if (timerId) {
-      clearTimeout(timerId);
-    }
-    timerId = setTimeout(() => {
-      func(...args);
-      timerId = null;
-    }, delay);
-  };
-}
 
 export default function Home({
   session,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  
   return (
     <>
       <Head>

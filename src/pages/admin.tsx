@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ProfileLayout } from "@/components/layout";
 import { UserDashboard } from "@/components/profile/dashboards";
 import { api } from "@/utils/api";
+import { useSession } from "next-auth/react";
 
 export const ProfileData = z.object({
   name: z.string(),
@@ -16,16 +17,27 @@ export const ProfileData = z.object({
 });
 
 const SubjectSchema = z.object({
-  name: z.string(),
+  name: z.string().describe(""),
+  cheese: z.enum(["True", "False"]).describe("checkbox"),
+  pasta: z.boolean().describe("password"),
 });
 
-function Subject({ session }: WithSession) {
+function Subject() {
+  const { data: session } = useSession();
+  const DynamicSchema = React.useMemo(
+    () =>
+      z.object({
+        name: z.string().default(session?.user.name || "as"),
+      }),
+    [session]
+  );
+
   const { data: subjectData, isLoading } = useAdminQuery<Subject[]>({
-    session,
+    session: session || ({} as any),
     endpoint: "user",
   });
   const { state, onChange, onSubmit } = useAdminMutation({
-    schema: SubjectSchema,
+    schema: DynamicSchema,
     endpoint: "user",
   });
 
@@ -33,6 +45,7 @@ function Subject({ session }: WithSession) {
 
   return subjectData !== undefined ? (
     <div>
+      {JSON.stringify(session)}
       {subjectData.map((subject) => (
         <span key={subject.id}>
           {subject.id} {subject.name}
@@ -59,7 +72,7 @@ function Subject({ session }: WithSession) {
   ) : null;
 }
 
-function Admin({ session }: WithSession) {
+function Admin() {
   const [active, setActive] = React.useState<string>("Profile");
 
   function onClick(target: string) {
@@ -78,4 +91,4 @@ function Admin({ session }: WithSession) {
   );
 }
 
-export default withAuth(Admin);
+export default Subject;

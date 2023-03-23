@@ -65,8 +65,8 @@ export const userRouter = router({
         data: {
           type: "Credentials",
           provider: "Credentials",
-          userId: user.id,
           providerAccountId: user.id,
+          userId: user.id,
         },
       });
     }),

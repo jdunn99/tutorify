@@ -1,7 +1,7 @@
 import React from "react";
 
 const theme = {
-  base: "text-white border-sky-700 bg-sky-600 hover:bg-sky-700 hover:border-sky-800 shadow-sm text-sm px-4 py-2 rounded",
+  base: "text-white border-sky-700 bg-sky-600 hover:bg-sky-700 hover:border-sky-800 shadow-sm text-sm px-4 py-2 rounded disabled:bg-sky-200",
   open: "text-sky-600 border-sky-400 border bg-white hover:bg-sky-50 shadow-sm text-sm px-4 py-2 rounded hover:border-sky-600",
 };
 

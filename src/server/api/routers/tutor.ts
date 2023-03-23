@@ -5,6 +5,59 @@ import {
   protectedProcedure,
   adminProtectedProcedure,
 } from "@/server/api/trpc";
+import { TutorStatus } from "@prisma/client";
+
+const BasicInfoSchema = z.object({
+  age: z.number().int().min(18).max(99).default(18),
+  phone: z.string().describe("tel").min(10),
+  address: z.string().min(1),
+  address2: z.string().optional(),
+  city: z.string().min(1),
+  state: z.string().min(1), // enum ?
+  zip: z.string().min(5),
+  country: z.string().min(1),
+});
+
+const AuthorizationSchema = z.object({
+  isWorkAuthorized: z.boolean().describe("checkbox"),
+  needsVisaSponsorship: z.boolean().describe("checkbox"),
+  hasVisaDependency: z.boolean().describe("checkbox"),
+});
+
+const TechnicalSchema = z.object({
+  hasInternetConnection: z.boolean().describe("checkbox"),
+  hasTechnicalKnowledge: z.boolean().describe("checkbox"),
+  hasMicrophone: z.boolean().describe("checkbox"),
+  hasWebcam: z.boolean().describe("checkbox"),
+});
+
+const EducationSchema = z.object({
+  school: z.string().min(1),
+  degree: z.string(),
+  fieldOfStudy: z.string(),
+  educationYearStarted: z.string().min(4).max(4),
+  educationYearEnded: z.string().optional(),
+  educationMonthStarted: z.string(),
+  educationMonthEnded: z.string().optional(),
+});
+
+const EmploymentSchema = z.object({
+  employmentTitle: z.string().nonempty(),
+  employmentType: z.string(),
+  companyName: z.string().min(1),
+  employmentMonthStarted: z.string(),
+  employmentYearStarted: z.string(),
+  employmentMonthEnded: z.string(),
+  employmentYearEnded: z.string(),
+});
+
+const schema = z
+  .object({})
+  .merge(AuthorizationSchema)
+  .merge(BasicInfoSchema)
+  .merge(TechnicalSchema)
+  .merge(EducationSchema)
+  .merge(EmploymentSchema);
 
 export const TutorData = z.object({
   hourlyRate: z.number().nonnegative(),
@@ -52,14 +105,100 @@ export const tutorRouter = router({
   create: adminProtectedProcedure
     .input(z.object({ profileId: z.string().cuid() }))
     .mutation(async ({ input, ctx }) => {
-      const { prisma } = ctx;
-      const { profileId } = input;
+      return { input, ctx };
+    }),
 
-      return await prisma.tutor.create({
-        data: {
-          profileId,
-        },
-      });
+  submitApplication: protectedProcedure
+    .input(z.object({ data: schema, id: z.string().cuid() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { prisma, session } = ctx;
+        const { data, id } = input;
+
+        // session id has to match the profile id
+        const profile = await prisma.profile.findUnique({
+          where: { id },
+          include: { tutorProfile: true },
+        });
+        if (!profile || profile.userId !== session.user.id)
+          throw new Error("Not validated");
+
+        if (profile.tutorProfile !== null) throw new Error("Already exists");
+
+        // parse out location, education and experience properties
+        const {
+          school,
+          degree,
+          fieldOfStudy,
+          educationYearEnded,
+          educationYearStarted,
+          educationMonthEnded,
+          educationMonthStarted,
+          employmentTitle,
+          employmentType,
+          employmentYearEnded,
+          employmentMonthEnded,
+          employmentYearStarted,
+          employmentMonthStarted,
+          address,
+          address2,
+          city,
+          companyName,
+          state,
+          zip,
+          country,
+          ...rest
+        } = data;
+
+        await prisma.profile.update({
+          where: { id },
+          data: {
+            tutorProfile: {
+              create: {
+                status: "PENDING",
+                location: {
+                  create: {
+                    zip,
+                    city,
+                    state,
+                    address,
+                    address2,
+                    country,
+                  },
+                },
+                education: {
+                  create: {
+                    degree,
+                    school,
+                    fieldOfStudy,
+                    yearStarted: educationYearStarted,
+                    yearEnded: educationYearEnded || "",
+                    monthStarted: educationMonthStarted,
+                    monthEnded: educationMonthEnded || "",
+                  },
+                },
+                employment: {
+                  create: {
+                    companyName,
+                    monthEnded: employmentMonthEnded,
+                    monthStarted: employmentMonthStarted,
+                    yearEnded: employmentYearEnded,
+                    yearStarted: employmentYearStarted,
+                    type: employmentType,
+                    title: employmentTitle,
+                  },
+                },
+                ...rest,
+              },
+            },
+          },
+        });
+
+        return true;
+      } catch (error) {
+        console.error(error);
+        return false;
+      }
     }),
 
   // Update the logged in tutor's information. @self

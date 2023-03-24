@@ -11,10 +11,20 @@ import {
 import { RxChevronDown } from "react-icons/rx";
 import Link from "next/link";
 
+type TextColor = {
+  base: string;
+  hover: string;
+};
+type SidebarTheme = {
+  background: string;
+  primaryColor: TextColor;
+  secondaryColor: TextColor;
+};
+
 type SidebarCategory = {
   heading: string;
   icon?: JSX.Element;
-  children: SidebarLink[];
+  children?: SidebarLink[];
 };
 export type SidebarItems = { user: SidebarCategory[] };
 
@@ -25,51 +35,128 @@ type SidebarLink = {
 
 export interface SidebarProps {
   active: string;
-  onClick(target: string): void;
   items: SidebarItems;
+  handleClick(target: string): void;
+  theme?: SidebarTheme;
 }
 
-function SidebarContainer({ children }: { children?: React.ReactNode }) {
+interface SidebarContainerProps extends Pick<SidebarProps, "theme"> {
+  children?: React.ReactNode;
+}
+
+const defaultTheme: SidebarTheme = {
+  background: "transparent",
+  primaryColor: { base: "gray-600", hover: "black" },
+  secondaryColor: { base: "sky-500", hover: "sky-500" },
+};
+
+const SIDEBAR_CONTAINER =
+  "flex flex-col items-end w-14 hover:w-72 md:w-72 h-screen transition-all duration-300 border-none z-10";
+const SIDEBAR_INNER =
+  "overflow-y-auto overflow-x-hidden py-8 px-8 flex flex-col gap-4 justify-between flex-grow";
+
+function SidebarContainer({
+  children,
+  theme: { background } = defaultTheme,
+}: SidebarContainerProps) {
   return (
-    <div className="flex flex-col w-14 hover:w-72 md:w-72 bg-zinc-100 h-screen transition-all duration-300 border-none z-10">
-      <div className="overflow-y-auto overflow-x-hidden py-8 px-8 flex flex-col gap-4 justify-between flex-grow">
-        {children}
-      </div>
+    <div className={`${background} ${SIDEBAR_CONTAINER}`}>
+      <div className={SIDEBAR_INNER}>{children}</div>
     </div>
   );
 }
 
-function SidebarContent({ active, items, onClick }: SidebarProps) {
+const SIDEBAR_ACCORDION_TRIGGER =
+  "SidebarAccordion relative w-full flex font-medium hover:text-black flex-row gap-4 justify-between items-center h-11 focus:outline-none text-sm rounded-lg cursor-pointer";
+const SIDEBAR_ACCORDION_CONTENT =
+  "SidebarAccordionContent overflow-hidden space-y-1 mt-2 border-l-2 ";
+const SIDEBAR_TRIGGER_ICON = "SidebarTriggerIcon text-lg";
+
+function SidebarContent({
+  active,
+  items,
+  handleClick,
+  theme: { primaryColor, secondaryColor } = defaultTheme,
+}: SidebarProps) {
+  const { user } = items;
+
+  function renderLinkWithChildren({
+    icon,
+    heading,
+    children,
+  }: (typeof user)[number]) {
+    return (
+      <React.Fragment>
+        <Accordion.AccordionTrigger
+          className={`${SIDEBAR_ACCORDION_TRIGGER}
+      text-${primaryColor.base} hover:text-${primaryColor.hover}`}
+        >
+          <div className="flex items-center gap-4">
+            <span className={SIDEBAR_TRIGGER_ICON}>{icon}</span>
+            <span>{heading}</span>
+          </div>
+          <RxChevronDown className="AccordionChevron" />
+        </Accordion.AccordionTrigger>
+        <Accordion.AccordionContent className={SIDEBAR_ACCORDION_CONTENT}>
+          {children!.map(({ href, icon }, index) => (
+            <div
+              key={index}
+              onClick={() => handleClick(href)}
+              className={`cursor-pointer relative ${
+                active === href
+                  ? `bg-white text-${secondaryColor.base}`
+                  : `text-${primaryColor.base}`
+              } flex  flex-row items-center h-9 focus:outline-none hover:text-${
+                secondaryColor.hover
+              } font-medium hover:bg-white rounded-lg ml-2 px-2 gap-4`}
+            >
+              <span className={SIDEBAR_TRIGGER_ICON}>{icon}</span>
+              <span className="text-sm tracking-wide truncate">{href}</span>
+            </div>
+          ))}
+        </Accordion.AccordionContent>
+      </React.Fragment>
+    );
+  }
+
+  function renderLinkWithoutChildren(heading: string, icon?: JSX.Element) {
+    return (
+      <div
+        className={`${SIDEBAR_ACCORDION_TRIGGER} text-${primaryColor.base}  hover:text-${primaryColor.hover}`}
+        onClick={() => handleClick(heading)}
+      >
+        <div className="flex items-center gap-4">
+          <span
+            className={`text-lg ${
+              active === heading ? `text-${secondaryColor.base}` : ``
+            }`}
+          >
+            {icon}
+          </span>
+          <span
+            className={`${
+              active === heading ? `text-${primaryColor.hover}` : ``
+            }`}
+          >
+            {heading}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <React.Fragment>
       <Accordion.Root type="multiple" className="space-y-2">
-        {items.user.map((link, index) => (
+        {user.map(({ children, icon, heading }, index) => (
           <Accordion.Item
             value={index.toString()}
             key={index}
             className="w-full "
           >
-            <Accordion.AccordionTrigger className="SidebarAccordion relative text-gray-600 w-full flex font-medium hover:text-black flex-row gap-4 justify-between items-center h-11 focus:outline-none text-sm rounded-lg">
-              <div className="flex items-center gap-4">
-                <span className="SidebarTriggerIcon text-lg">{link.icon}</span>
-                <span>{link.heading}</span>
-              </div>
-              <RxChevronDown className="AccordionChevron" />
-            </Accordion.AccordionTrigger>
-            <Accordion.AccordionContent className="SidebarAccordionContent overflow-hidden space-y-1 mt-2 border-l-2 ">
-              {link.children.map(({ href, icon }, index) => (
-                <div
-                  key={index}
-                  onClick={() => onClick(href)}
-                  className={`cursor-pointer relative ${
-                    active === href ? "bg-white text-sky-600" : "text-gray-600"
-                  } flex hover:drop-shadow-sm flex-row items-center h-9 focus:outline-none hover:text-sky-600 font-medium hover:bg-white rounded-lg ml-2 px-2 gap-4`}
-                >
-                  <span>{icon}</span>
-                  <span className="text-sm tracking-wide truncate">{href}</span>
-                </div>
-              ))}
-            </Accordion.AccordionContent>
+            {typeof children !== "undefined"
+              ? renderLinkWithChildren({ children, icon, heading })
+              : renderLinkWithoutChildren(heading, icon)}
           </Accordion.Item>
         ))}
       </Accordion.Root>
@@ -77,7 +164,7 @@ function SidebarContent({ active, items, onClick }: SidebarProps) {
   );
 }
 
-export function Sidebar({ ...props }: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
   return (
     <SidebarContainer>
       <div>

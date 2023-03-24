@@ -3,19 +3,25 @@ import {
   MdBook,
   MdDashboard,
   MdHelp,
+  MdHome,
   MdMessage,
   MdMoney,
   MdPeople,
 } from "react-icons/md";
 import { Sidebar, type SidebarItems, type SidebarProps } from "./sidebar";
 
-interface ProfileLayoutProps extends Pick<SidebarProps, "active" | "onClick"> {
+interface ProfileLayoutProps
+  extends Pick<SidebarProps, "active" | "handleClick"> {
   children?: React.ReactNode;
 }
 
 // Static reference to all links and their corresponding icons in the Sidebar
 const SidebarLinks: SidebarItems = {
   user: [
+    {
+      heading: "Home",
+      icon: <MdHome />,
+    },
     {
       heading: "Dashboard",
       icon: <MdDashboard />,
@@ -83,5 +89,9 @@ export function ProfileLayout({ children, ...rest }: ProfileLayoutProps) {
 }
 
 export function Container({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto p-24 bg-white overflow-x-hidden sm:px-6 md:px-8 max-w-screen-lg">{children}</div>;
+  return (
+    <div className="mx-auto p-24 bg-white overflow-x-hidden sm:px-6 md:px-8 max-w-screen-lg">
+      {children}
+    </div>
+  );
 }

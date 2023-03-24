@@ -1,19 +1,23 @@
 import React from "react";
 import {
-  GetServerSideProps,
-  GetStaticProps,
-  InferGetStaticPropsType,
+  GetServerSidePropsContext,
+  GetServerSidePropsResult,
+  GetStaticPropsContext,
+  InferGetServerSidePropsType,
+  type GetServerSideProps,
 } from "next";
 import { api } from "@/utils/api";
 import { Container, ProfileLayout } from "@/components/layout";
 import { UserDashboard } from "@/components/profile/dashboards";
 import { getSession } from "next-auth/react";
-import type { Session } from "next-auth";
+import { getServerSession, Session } from "next-auth";
 import { Role } from "@prisma/client";
-import Image from "next/image";
 import { MdApps, MdSchool, MdWork } from "react-icons/md";
 import { Loading } from "@/components/loading";
 import { Button } from "@/components/button";
+import { prisma } from "@/server/prisma";
+import { getServerAuthSession } from "@/server/auth";
+import { Sidebar } from "@/components/sidebar";
 
 function Temp(profile: any) {
   const ProfileHeading = () => (
@@ -119,61 +123,154 @@ function Temp(profile: any) {
   );
 }
 
-function Profile({ id, session }: { id: string; session: Session }) {
+export default function Profile({
+  profile,
+  session,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [active, setActive] = React.useState<string>("");
-  const { isLoading, data: profile } = api.profile.getById.useQuery({ id });
 
-  function onClick(target: string) {
-    setActive(target);
-  }
-
-  if (isLoading || !profile) return <Loading />;
-
-  const isOwnProfile = profile?.userId === session.user.id;
-  const isTutorProfile = !!profile.tutorProfile;
-  const isAdminUser =
-    session.user.role === Role.ADMIN || session.user.role === Role.SUPERUSER;
-
-  if (isOwnProfile) {
-    return (
-      <ProfileLayout active={active} onClick={onClick}>
-        <div className="space-y-8">
-          <UserDashboard />
-        </div>
-      </ProfileLayout>
-    );
-  } else if (isTutorProfile) {
-    return (
-      <Container>
-        <Temp profile={profile} />
-      </Container>
-    );
-  } else if (!isAdminUser) {
-    return (
-      <Container>
-        <div>Not allowed to view this profile.</div>
-      </Container>
-    );
-  } else if (isAdminUser) {
-    return (
-      <ProfileLayout active={active} onClick={onClick}>
-        <div className="space-y-8">
-          <img src={session.user.image || ""} alt="IMG" />
-        </div>
-      </ProfileLayout>
-    );
-  }
+  return (
+    <ProfileLayout active={active} handleClick={setActive}>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Se 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+      <p>Section 1</p>
+    </ProfileLayout>
+  );
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { params } = ctx;
+export async function getServerSideProps({
+  req,
+  res,
+  params,
+}: GetServerSidePropsContext) {
   if (!params || !params.id || typeof params.id !== "string")
+    return { redirect: { destination: "/" } };
+
+  const session = await getServerAuthSession({
+    req,
+    res,
+  });
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: params.id },
+    include: {
+      tutorProfile: {
+        include: { education: true, employment: true, location: true },
+      },
+    },
+  });
+
+  if (!profile || !profile.tutorProfile || profile.tutorProfile === null)
+    return { notFound: true };
+  if (
+    profile.tutorProfile.status !== "ACTIVE" &&
+    profile.userId !== session?.user.id
+  )
     return { notFound: true };
 
-  const session = await getSession(ctx);
-  if (!session) return { notFound: true };
-
-  return { props: { id: params.id, session } };
-};
-
-export default Profile;
+  return {
+    props: {
+      session,
+      profile,
+    },
+  };
+}

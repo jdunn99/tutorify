@@ -34,6 +34,7 @@
     "zod": "^3.21.2"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.9",
     "@types/bcrypt": "^5.0.0",
     "@types/cookies": "^0.7.7",
     "@types/node": "18.14.6",

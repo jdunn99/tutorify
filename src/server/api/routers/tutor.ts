@@ -101,6 +101,93 @@ export const tutorRouter = router({
       return subject.tutors;
     }),
 
+  getByQuery: publicProcedure
+    .input(z.object({ query: z.string().nonempty() }))
+    .query(async ({ input, ctx }) => {
+      const { prisma } = ctx;
+      const { query } = input;
+
+      /*
+    const tutors = await prisma.tutor.findMany({
+  where: {
+    AND: [
+      {
+        status: 'ACTIVE',
+      },
+      {
+        OR: [
+          {
+            subjects: {
+              some: {
+                name: {
+                  contains: searchQuery,
+                },
+              },
+            },
+          },
+          {
+            biography: {
+              contains: searchQuery,
+            },
+          },
+        ],
+      },
+    ],
+  },
+  orderBy: [
+    {
+      appointments: {
+        count: 'desc',
+      },
+    },
+    {
+      review: {
+        avg: 'desc',
+      },
+    },
+  ],
+});*/
+
+      const result = await prisma.tutor.findMany({
+        select: {
+          id: true,
+          hourlyRate: true,
+          profile: {
+            select: {
+              name: true,
+              biography: true,
+            },
+          },
+          _count: {
+            select: {
+              appointments: true,
+            },
+          },
+        },
+        where: {
+          OR: [
+            {
+              subjects: {
+                some: {
+                  name: {
+                    contains: query,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        orderBy: {
+          appointments: {
+            _count: "desc",
+          },
+        },
+      });
+
+      console.log(result);
+      return result;
+    }),
+
   // Convert a regular Profile into a TutorProfile. @admin
   create: adminProtectedProcedure
     .input(z.object({ profileId: z.string().cuid() }))

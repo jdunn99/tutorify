@@ -1,19 +1,39 @@
 import React from "react";
 
-const theme = {
-  base: "text-white border-sky-700 bg-sky-600 hover:bg-sky-700 hover:border-sky-800 shadow-sm text-sm px-4 py-2 rounded disabled:bg-sky-200",
-  open: "text-sky-600 border-sky-400 border bg-white hover:bg-sky-50 shadow-sm text-sm px-4 py-2 rounded hover:border-sky-600",
+export const BUTTON_VARIANTS = {
+  base: "text-white border border-green-200 bg-green-500 hover:bg-green-700 shadow-sm disabled:bg-green-200",
+  open: "text-green-600 border-green-400 border bg-white hover:bg-green-50 shadow-sm ",
 };
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: keyof typeof theme;
+export const BUTTON_SIZES = {
+  xs: "text-xs px-2.5 py-1.5 rounded",
+  sm: "text-sm px-3 py-2 leading-4 rounded",
+  base: "text-sm px-4 py-2 rounded-lg",
+  lg: "text-base px-4 py-2 rounded-lg",
+  xl: "text-lg px-6 py-3 rounded-xl",
+  "2xl": "text-xl px-8 py-3 md:py-4 md:text-2xl md:px-8 rounded-2xl",
+};
+
+interface BaseProps {
+  variant?: keyof typeof BUTTON_VARIANTS;
+  size?: keyof typeof BUTTON_SIZES;
   children: React.ReactNode;
 }
 
+type ButtonProps = BaseProps & React.ButtonHTMLAttributes<HTMLButtonElement>;
+type AnchorProps = BaseProps & React.AnchorHTMLAttributes<HTMLAnchorElement>;
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, variant = "base", className = "", ...rest }, ref) => {
+  (
+    { children, variant = "base", size = "base", className = "", ...rest },
+    ref
+  ) => {
     return (
-      <button className={`${theme[variant]} ${className}`} ref={ref} {...rest}>
+      <button
+        className={`${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        ref={ref}
+        {...rest}
+      >
         {children}
       </button>
     );
@@ -21,3 +41,22 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
+
+export const ButtonLink = React.forwardRef<HTMLAnchorElement, AnchorProps>(
+  (
+    { children, variant = "base", size = "base", className = "", ...rest },
+    ref
+  ) => {
+    return (
+      <a
+        className={`${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className} no-underline`}
+        ref={ref}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
+  }
+);
+
+ButtonLink.displayName = "ButtonLink";

@@ -13,7 +13,6 @@ import { Spinner } from "./loading";
  *
  * @param {Function} func - The function to debounce.
  * @param {number} delay - The number of milliseconds to delay.
- * @returns {Function} A debounced function.
  */
 function debounce(func: Function, delay: number) {
   let timerId: ReturnType<typeof setTimeout> | null;
@@ -34,6 +33,8 @@ function debounce(func: Function, delay: number) {
  */
 export function Search() {
   const router = useRouter();
+  const { pathname } = router;
+  const isShallow = pathname === "/search";
 
   const searchResultsRef = React.useRef<HTMLDivElement>(null);
   const [focused, setFocused] = React.useState<boolean>(false);
@@ -60,6 +61,10 @@ export function Search() {
     []
   );
 
+  function onLinkClicked() {
+    if (isShallow) setFocused(false);
+  }
+
   /**
    * Handles the submit event for the search form.
    *
@@ -69,16 +74,18 @@ export function Search() {
     event.preventDefault();
     if (query.length < 1) return;
 
-    router.push(`/search?query=${query}`);
+    if (isShallow)
+      router.push(`/search?query=${query}`, undefined, { shallow: true });
+    else router.push(`/search?query=${query}`);
   }
 
   return (
-    <div className="relative" ref={searchResultsRef}>
-      <form className={`flex justify-center w-96 `} onSubmit={onSubmit}>
+    <div className="relative w-full" ref={searchResultsRef}>
+      <form className={`flex justify-center w-full`} onSubmit={onSubmit}>
         <Input
           type="text"
-          className="flex-1 rounded-r-none  focus:outline-none"
-          placeholder="Search"
+          className="flex-1 rounded-r-none border-r-0 bg-white focus:outline-none"
+          placeholder="Search for a subject"
           onFocus={() => setFocused(true)}
           onChange={onChangeDebounced}
         />
@@ -88,7 +95,7 @@ export function Search() {
       </form>
 
       {query.length > 2 && focused ? (
-        <div className="absolute text-left top-14 left-0 right-0 overflow-y-auto bg-white z-50 rounded shadow-sm border border-slate-200">
+        <div className="absolute text-left top-14 left-0 right-0 overflow-y-auto bg-white z-50 rounded-lg shadow-sm border border-slate-200">
           {isLoading ? (
             <div className="flex items-center justify-center p-4">
               <Spinner />
@@ -97,14 +104,16 @@ export function Search() {
             autocomplete?.map(({ name }) => (
               <Link
                 key={name}
-                className="block cursor-pointer hover:bg-sky-50 p-4"
+                className="block cursor-pointer hover:bg-green-600 border-b-black/10 border-b hover:text-white no-underline px-4 py-2"
                 href={`/search?query=${name}`}
+                shallow={isShallow}
+                onClick={onLinkClicked}
               >
                 {name}
               </Link>
             ))
           ) : (
-            <p className='p-4'>No results found. </p>
+            <p className="p-4">No results found. </p>
           )}
         </div>
       ) : null}

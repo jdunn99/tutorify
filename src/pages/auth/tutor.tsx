@@ -588,7 +588,7 @@ export default function TutorRegister({
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getServerSession(context.req, context.res, authOptions);
   if (!session) {
-    return { redirect: "/auth/signin" };
+    return { redirect: { destination: "/auth/signin" } };
   }
 
   // Make sure the user is not a tutor

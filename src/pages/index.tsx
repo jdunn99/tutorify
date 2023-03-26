@@ -20,6 +20,7 @@ import { MdCheck, MdScience } from "react-icons/md";
 import { BiBook, BiMath } from "react-icons/bi";
 import { GoGlobe } from "react-icons/go";
 import Image from "next/image";
+import { Footer } from "@/components/footer";
 
 interface CoreSubjectProps {
   name?: string;
@@ -360,7 +361,7 @@ export default function Home({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="flex h-full flex-col">
-        <Navbar />
+        <Navbar session={session}/>
         <main>
           <HeroSection />
           <FirstSection />
@@ -369,6 +370,7 @@ export default function Home({
           <TestimonialSection />
           <FaqSection />
         </main>
+        <Footer />
       </div>
     </>
   );
@@ -377,21 +379,9 @@ export default function Home({
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getSession(context);
 
-  if (!session) return { redirect: { destination: "/auth/signin" } };
-
-  // if they don't have a profile. create one.
-  await prisma.profile.upsert({
-    where: { userId: session.user.id },
-    update: {},
-    create: {
-      name: session.user.name || "",
-      user: { connect: { id: session.user.id } },
-    },
-  });
-
   return {
     props: {
-      session,
+      session: session === null ? undefined : session,
     },
   };
 }

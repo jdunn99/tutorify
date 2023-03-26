@@ -106,7 +106,7 @@ export default function SignUp({
               Already have an account? Sign in{" "}
               <Link
                 href="/auth/signin"
-                className="font-bold text-sky-600 hover:underline"
+                className="font-bold text-green-600 hover:underline"
               >
                 here.
               </Link>
@@ -115,7 +115,7 @@ export default function SignUp({
               Interested in becoming a tutor?{" "}
               <Link
                 href="/auth/tutor"
-                className="font-bold text-sky-600 hover:underline"
+                className="font-bold text-green-600 hover:underline"
               >
                 Apply now.
               </Link>

@@ -60,6 +60,13 @@ export const profileRouter = router({
 
     return await prisma.profile.findUnique({
       where: { userId: user.id },
+      include: {
+        tutorProfile: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
   }),
 

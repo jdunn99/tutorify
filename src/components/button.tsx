@@ -3,6 +3,7 @@ import React from "react";
 export const BUTTON_VARIANTS = {
   base: "text-white border border-green-200 bg-green-500 hover:bg-green-700 shadow-sm disabled:bg-green-200",
   open: "text-green-600 border-green-400 border bg-white hover:bg-green-50 shadow-sm ",
+  ghost: "text-gray-600 hover:text-green-600 bg-transparent",
 };
 
 export const BUTTON_SIZES = {
@@ -12,6 +13,7 @@ export const BUTTON_SIZES = {
   lg: "text-base px-4 py-2 rounded-lg",
   xl: "text-lg px-6 py-3 rounded-xl",
   "2xl": "text-xl px-8 py-3 md:py-4 md:text-2xl md:px-8 rounded-2xl",
+  icon: "p-2 text-lg",
 };
 
 interface BaseProps {

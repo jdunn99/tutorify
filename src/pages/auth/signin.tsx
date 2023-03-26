@@ -83,7 +83,7 @@ export default function SignIn({
               Don&apos;t have an account? Sign up{" "}
               <Link
                 href="/auth/register"
-                className="font-bold text-sky-600 hover:underline"
+                className="font-bold text-green-600 hover:underline"
               >
                 here.
               </Link>

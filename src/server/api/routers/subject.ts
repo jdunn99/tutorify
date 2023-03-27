@@ -4,13 +4,26 @@ import {
   publicProcedure,
   adminProtectedProcedure,
 } from "@/server/api/trpc";
+import { CoreSubject } from "@prisma/client";
+
+const coreSubjectMapping = {
+  math: "MATH",
+  science: "SCIENCE",
+  "social studies": "SOCIAL_STUDIES",
+  "language arts": "LANGUAGE_ARTS",
+};
+
+type SubjectList = {
+  coreSubject: CoreSubject;
+  subjects: { id: string; name: string }[];
+}[];
 
 export const subjectRouter = router({
   // Get all Subjects. @all
   get: publicProcedure.query(async ({ ctx }) => {
     const { prisma } = ctx;
 
-    return prisma.subject.findMany();
+    return await prisma.subject.findMany();
   }),
 
   // Get a single Subject by ID. @all
@@ -25,14 +38,38 @@ export const subjectRouter = router({
       });
     }),
 
+  getGroupedSubjects: publicProcedure.query(async ({ ctx }) => {
+    const { prisma } = ctx;
+    return (await prisma.$queryRaw`
+          SELECT 
+            coreSubject, 
+            JSON_ARRAYAGG(JSON_OBJECT('id', id, 'name', name)) AS subjects 
+          FROM 
+            Subject 
+          GROUP BY 
+            coreSubject 
+          ORDER BY 
+            coreSubject ASC;`) as SubjectList;
+  }),
+
   autocomplete: publicProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input, ctx }) => {
       const { prisma } = ctx;
       const { query } = input;
 
+      const lowercase = query.toLowerCase();
+      const mapped =
+        coreSubjectMapping[lowercase as keyof typeof coreSubjectMapping];
+      if (mapped)
+        return await prisma.subject.findMany({
+          where: { coreSubject: mapped as CoreSubject },
+        });
+
       return await prisma.subject.findMany({
-        where: { name: { contains: query } },
+        where: {
+          name: { contains: query },
+        },
         select: { name: true },
       });
     }),
@@ -47,6 +84,7 @@ export const subjectRouter = router({
       const subject = await prisma.subject.create({
         data: {
           name,
+          coreSubject: "MATH",
         },
       });
 

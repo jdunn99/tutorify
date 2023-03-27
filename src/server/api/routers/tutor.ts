@@ -5,7 +5,6 @@ import {
   protectedProcedure,
   adminProtectedProcedure,
 } from "@/server/api/trpc";
-import { TutorStatus } from "@prisma/client";
 
 const BasicInfoSchema = z.object({
   age: z.number().int().min(18).max(99).default(18),
@@ -16,6 +15,8 @@ const BasicInfoSchema = z.object({
   state: z.string().min(1), // enum ?
   zip: z.string().min(5),
   country: z.string().min(1),
+  biography: z.string(),
+  headline: z.string(),
 });
 
 const AuthorizationSchema = z.object({
@@ -78,7 +79,7 @@ export const tutorRouter = router({
       const { prisma } = ctx;
       const { id } = input;
 
-      return await prisma.profile.findUnique({
+      return await prisma.user.findUnique({
         where: { id },
         include: { tutorProfile: true },
       });
@@ -152,10 +153,9 @@ export const tutorRouter = router({
         select: {
           id: true,
           hourlyRate: true,
-          profile: {
+          user: {
             select: {
               name: true,
-              biography: true,
             },
           },
           _count: {
@@ -203,17 +203,18 @@ export const tutorRouter = router({
         const { data, id } = input;
 
         // session id has to match the profile id
-        const profile = await prisma.profile.findUnique({
+        const user = await prisma.user.findUnique({
           where: { id },
           include: { tutorProfile: true },
         });
-        if (!profile || profile.userId !== session.user.id)
+        if (!user || user.id !== session.user.id)
           throw new Error("Not validated");
 
-        if (profile.tutorProfile !== null) throw new Error("Already exists");
+        if (user.tutorProfile !== null) throw new Error("Already exists");
 
         // parse out location, education and experience properties
         const {
+          biography,
           school,
           degree,
           fieldOfStudy,
@@ -237,12 +238,12 @@ export const tutorRouter = router({
           ...rest
         } = data;
 
-        await prisma.profile.update({
+        await prisma.user.update({
           where: { id },
           data: {
             tutorProfile: {
               create: {
-                status: "PENDING",
+                biography,
                 location: {
                   create: {
                     zip,
@@ -296,7 +297,7 @@ export const tutorRouter = router({
       const { ...data } = input;
 
       return prisma.tutor.update({
-        where: { profileId: session.user.id },
+        where: { userId: session.user.id },
         data,
       });
     }),

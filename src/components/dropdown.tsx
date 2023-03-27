@@ -1,14 +1,16 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import React from "react";
-import { Button } from "./button";
+import { Button, BUTTON_SIZES, BUTTON_VARIANTS } from "./button";
 
 interface DropdownProps {
   heading: string | React.ReactNode;
   children?: React.ReactNode;
+  variant?: keyof typeof BUTTON_VARIANTS;
+  size?: keyof typeof BUTTON_SIZES;
 }
 
 export const DROPDOWN_VARIANTS = {
-  base: "px-4 relative rounded hover:bg-green-100 select-none text-gray-600 text-sm outline-none",
+  base: "px-4 py-2 relative rounded hover:bg-green-100 select-none text-gray-600 text-sm outline-none",
 };
 export const DROPDOWN_CONTENT_VARIANTS = {
   base: "DropdownMenuContent relative min-w-[220px] z-10 bg-white rounded-lg p-2 shadow-lg border border-green-600",
@@ -26,10 +28,11 @@ type DropdownItemProps = {
 export const DropdownItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenu.Item>,
   DropdownItemProps
->(({ children, variant = "base", className = "", ...rest }) => {
+>(({ children, variant = "base", className = "", ...rest }, ref) => {
   return (
     <DropdownMenu.Item
       className={`${DROPDOWN_VARIANTS[variant]} ${className}`}
+      ref={ref}
       {...rest}
     >
       <div className="flex gap-2 items-center">{children}</div>
@@ -46,10 +49,11 @@ type DropdownContentProps = {
 export const DropdownContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenu.Content>,
   DropdownContentProps
->(({ children, variant = "base", className = "", ...rest }) => {
+>(({ children, variant = "base", className = "", ...rest }, ref) => {
   return (
     <DropdownMenu.Content
       className={`${DROPDOWN_CONTENT_VARIANTS[variant]} ${className}`}
+      ref={ref}
       {...rest}
     >
       {children}
@@ -66,10 +70,11 @@ type DropdownLabelProps = {
 export const DropdownLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenu.Label>,
   DropdownLabelProps
->(({ children, variant = "base", className = "", ...rest }) => {
+>(({ children, variant = "base", className = "", ...rest }, ref) => {
   return (
     <DropdownMenu.Label
       className={`${DROPDOWN_LABEL_VARIANTS[variant]} ${className}`}
+      ref={ref}
       {...rest}
     >
       {children}
@@ -78,11 +83,16 @@ export const DropdownLabel = React.forwardRef<
 });
 DropdownLabel.displayName = DropdownMenu.Label.displayName;
 
-export function Dropdown({ heading, children }: DropdownProps) {
+export function Dropdown({
+  heading,
+  children,
+  variant = "ghost",
+  size = "icon",
+}: DropdownProps) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild className="DropdownMenuTrigger z-0">
-        <Button variant="ghost" size="icon" className="outline-none">
+        <Button variant={variant} size={size} className="outline-none">
           {heading}
         </Button>
       </DropdownMenu.Trigger>

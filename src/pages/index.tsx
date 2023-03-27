@@ -44,7 +44,7 @@ function CoreSubject({ name, heading, text, icon }: CoreSubjectProps) {
 
 function HeroSection() {
   return (
-    <section className="mx-auto prose max-w-7xl px-4 sm:px-6 lg:px-8 py-24 text-center">
+    <section className="mx-auto prose max-w-5xl px-4 sm:px-6 lg:px-8 py-24 text-center">
       <h1 className="mx-auto text-6xl max-w-4xl">
         Get expert <span className="text-green-500">online tutoring</span> in
         any subject
@@ -82,7 +82,7 @@ function FirstSection() {
 
   return (
     <section className="pt-20 pb-14 sm:pb-20 sm:pt-32 lg:pb-32">
-      <div className="prose mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="prose mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl md:text-center">
           <h1 className="font-semibold max-w-2xl  mx-auto text-5xl">
             Online Lessons That Deliver Real-World Results.
@@ -118,8 +118,8 @@ function FirstSection() {
 
 function CoreSubjectsSection() {
   return (
-    <section className="pt-20 pb-14 sm:pb-20 sm:pt-32 lg:pb-32">
-      <div className="prose mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="pt-20 pb-14 sm:pb-20 sm:pt-32 lg:pb-32" id="subjects">
+      <div className="prose mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl md:text-center">
           <h1 className="font-semibold">Master the core subjects.</h1>
           <p>
@@ -166,14 +166,14 @@ function CoreSubjectsSection() {
 function TutorApplicationSection() {
   return (
     <section className="relative overflow-hidden bg-green-600 py-32">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative">
         <div className="prose mx-auto max-w-lg text-center">
           <h3 className="text-white">Interested in becoming a tutor?</h3>
           <h3 className="text-3xl tracking-tight text-white sm:text-4xl">
             Apply now to start making a difference.
           </h3>
           <p className="text-white text-lg mb-12">
-            Whether you're an experienced educator or a subject matter expert,
+            Whether you&apos;re an experienced educator or a subject matter expert,
             we welcome your application to become a part of our community of
             dedicated tutors..
           </p>
@@ -244,8 +244,8 @@ function TestimonialSection() {
   }
 
   return (
-    <section className="bg-slate-50 py-20 sm:py-32">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="bg-slate-50 py-20 sm:py-32" >
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl md:text-center prose">
           <h1 className="text-3xl sm:text-4xl text-slate-900">
             See what our students have to say.
@@ -327,7 +327,7 @@ function FaqSection() {
 
   return (
     <section className="bg-slate-50 py-20 ">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className=" max-w-2xl  prose">
           <h1 className="text-3xl sm:text-4xl text-slate-900">
             Frequently Asked Questions
@@ -361,7 +361,7 @@ export default function Home({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="flex h-full flex-col">
-        <Navbar session={session}/>
+        <Navbar />
         <main>
           <HeroSection />
           <FirstSection />

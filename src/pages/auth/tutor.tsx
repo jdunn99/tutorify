@@ -1,15 +1,31 @@
 import { Button } from "@/components/button";
-import { Input } from "@/components/input";
+import { Footer } from "@/components/footer";
+import {
+  BooleanInput,
+  DropdownInput,
+  FormInput,
+  generateArrayOptions,
+  Input,
+  TextArea,
+} from "@/components/input";
 import { Spinner } from "@/components/loading";
+import { Navbar } from "@/components/navbar";
 import { authOptions } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { api } from "@/utils/api";
-import { FieldConfig, useForm, validate } from "@/utils/hooks/useFormReducer";
+import {
+  FieldConfig,
+  FormState,
+  useForm,
+  validate,
+} from "@/utils/hooks/useFormReducer";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { getServerSession } from "next-auth";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React from "react";
 import { z } from "zod";
+import { RegisterComponent } from "./register";
 
 /* Zod Schemas */
 
@@ -38,6 +54,8 @@ const TechnicalSchema = z.object({
 });
 
 const EducationSchema = z.object({
+  headline: z.string().min(1).max(65),
+  biography: z.string().min(1),
   school: z.string().min(1),
   degree: z.string(),
   fieldOfStudy: z.string(),
@@ -64,43 +82,6 @@ const schema = z
   .merge(TechnicalSchema)
   .merge(EducationSchema)
   .merge(EmploymentSchema);
-
-type State = {
-  value: string | number | boolean;
-  config: FieldConfig<any>;
-  error?: string;
-};
-
-interface InputProps {
-  state: State;
-  label?: string;
-  children?: React.ReactNode;
-}
-
-interface BooleanInputProps {
-  state: State;
-  heading: string;
-  labels?: string[];
-}
-
-interface DropdownInputProps extends InputProps {
-  placeholder: string;
-}
-
-function RegistrationSection({
-  children,
-  heading,
-}: {
-  children: React.ReactNode;
-  heading: string;
-}) {
-  return (
-    <React.Fragment>
-      <h1 className="text-xl font-bold text-slate-900 ">{heading}</h1>
-      {children}
-    </React.Fragment>
-  );
-}
 
 /*
  * Generates array of options where the value is a 100 year range
@@ -145,26 +126,85 @@ const degrees = [
 
 const employmentType = ["Full time", "Part time", "Contract", "Other"];
 
-/*
- * Generates an array of options given a list of keys
- */
-function generateArrayOptions(keys: string[]): JSX.Element[] {
-  const options = [];
-  for (let i = 0; i < keys.length; i++) {
-    options.push(
-      <option key={i + 1} value={keys[i]}>
-        {keys[i]}
-      </option>
-    );
-  }
+const coreSubjectMapping = {
+  MATH: "Math",
+  SCIENCE: "Science",
+  SOCIAL_STUDIES: "Social Studies",
+  LANGUAGE_ARTS: "Language Arts",
+};
 
-  return options;
+interface FormProps {
+  onChange(event: React.ChangeEvent<HTMLElement>, value?: any): void;
+  state: FormState;
+}
+interface SectionProps {
+  next?(): void;
+  prev?(): void;
+}
+type SectionWithFormProps = SectionProps & FormProps;
+
+interface SubjectProps extends SectionProps {
+  subjectsSelected: string[];
+  setSubjectsSelected: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export default function TutorRegister({
-  session,
-  id,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+function SubjectSection({
+  subjectsSelected,
+  setSubjectsSelected,
+}: SubjectProps) {
+  const { data: groupedSubjects } = api.subject.getGroupedSubjects.useQuery();
+
+  function onCheckboxChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const { target } = event;
+    const { value, checked } = target;
+
+    if (!checked) {
+      setSubjectsSelected(subjectsSelected.filter((id) => id !== value));
+    } else {
+      if (subjectsSelected.length >= 5) return;
+      setSubjectsSelected([...subjectsSelected, value]);
+    }
+  }
+
+  return (
+    <section className="py-10">
+      <div className="prose mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <h1 className="text-slate-800">Select your subjects.</h1>
+        <p>
+          Select 1–5 subjects you&apos;d like to tutor. You can add more later
+          once you&apos;re done signing up.{" "}
+        </p>
+        {groupedSubjects ? (
+          groupedSubjects.map(({ coreSubject, subjects }) => (
+            <div key={coreSubject} className="border-b pb-16">
+              <h2>{coreSubjectMapping[coreSubject]}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:text-left lg:grid-cols-3 gap-x-8">
+                {subjects.map(({ name, id }) => (
+                  <div key={id}>
+                    <label className="bg-white rounded-full shadow py-2 px-4">
+                      <input
+                        checked={subjectsSelected.includes(id)}
+                        value={id}
+                        onChange={onCheckboxChange}
+                        type="checkbox"
+                        className="mr-2 accent-green-600"
+                      />
+                      {name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <Spinner />
+        )}
+      </div>
+    </section>
+  );
+}
+
+export default function TutorRegister() {
   const { state, onChange, dispatch } = useForm(schema, `tutor/application`);
   const [index, setIndex] = React.useState<number>(0);
   const { mutateAsync: submitApplication } =
@@ -175,44 +215,30 @@ export default function TutorRegister({
   /**
    * Submit validated state to our api endpoint.
    */
-  const onSubmit = React.useCallback(async () => {
-    const { result, errors } = validate(state, schema);
-    if (!result || errors) return;
+  // const onSubmit = React.useCallback(async () => {
+  //   const { result, errors } = validate(state, schema);
+  //   if (!result || errors) return;
+  //
+  //   setIndex(6);
+  //   // mutate to tutor api
+  //   const success = await submitApplication({ id, data: result });
+  //   if (success) router.push(`/profile`);
+  // }, [state, submitApplication, id, router]);
 
-    setIndex(6);
-    // mutate to tutor api
-    const success = await submitApplication({ id, data: result });
-    if (success) router.push(`/profile/${id}`);
-  }, [state, submitApplication, id, router]);
-
-  const memoizedState = React.useMemo(() => JSON.stringify(state), [state]);
-  const storageCallback = React.useCallback(
-    () => localStorage.setItem(`tutor/application`, memoizedState),
-    [memoizedState]
-  );
-
-  /*
-   * Handle clicking the next button. Maybe should remove hardcoded values in the future
-   */
   const handleNext = React.useCallback(
     <T extends z.ZodTypeAny>(schema: T) => {
       const { errors } = validate(state, schema);
-      storageCallback();
 
       if (errors) {
         dispatch({ type: "VALIDATE", payload: { errors } });
         return;
       }
 
-      if (index === 5) onSubmit(); // submit
-      setIndex(index + 1);
+      setIndex((index) => index + 1);
     },
-    [index, state, dispatch, storageCallback, onSubmit]
+    [dispatch, state]
   );
 
-  /*
-   * Handle clicking the prev button
-   */
   function handlePrev() {
     setIndex((index) => (index <= 1 ? index : index - 1));
   }
@@ -233,128 +259,10 @@ export default function TutorRegister({
     );
   }
 
-  /* INPUTS */
-
-  /*
-   * Render a standard input
-   */
-  function FormInput({ state, label }: InputProps) {
-    let { value, config, error } = state;
-    const { type, label: name } = config;
-
-    if (typeof value === "boolean") value = "";
-
-    return (
-      <label
-        htmlFor={label}
-        className="text-sm flex-1 block w-full font-semibold"
-      >
-        {label}
-        <Input
-          type={type}
-          className={`mt-2 font-normal w-full ${
-            error ? "border border-red-500" : ""
-          }`}
-          value={value}
-          onChange={onChange}
-          name={name}
-          placeholder={label}
-        />
-        <span className="font-normal text-xs text-red-500">{error}</span>
-      </label>
-    );
-  }
-
-  /*
-   * Render a checkbox to represent boolean inputs.
-   */
-  function BooleanInput({
-    state,
-    labels = ["Yes", "No"],
-    heading,
-  }: BooleanInputProps) {
-    const { value, config, error } = state;
-    const { type, label: name } = config;
-
-    /*
-     * Override the value to a boolean in the in our default onChange behavior
-     */
-    function onCheckboxChange(
-      event: React.ChangeEvent<HTMLInputElement>,
-      value: boolean
-    ) {
-      const { name: field, checked } = event.target;
-
-      if (checked)
-        dispatch({ type: "UPDATE_FIELD", payload: { field, value } });
-    }
-
-    return (
-      <div>
-        <p className="mb-2 text-sm font-semibold text-slate-900">{heading}</p>
-        {error ? (
-          <span className="font-normal text-xs text-red-500">
-            Value is required
-          </span>
-        ) : null}
-        {labels.map((label, index) => (
-          <label key={label} className="block">
-            <input
-              className="mr-1"
-              type={type}
-              name={name}
-              checked={index === 0 ? value === true : value === false}
-              onChange={(event) => {
-                onCheckboxChange(event, index === 0 ? true : false);
-              }}
-            />{" "}
-            {label}
-          </label>
-        ))}
-      </div>
-    );
-  }
-
-  /*
-   * Renders an array of strings into a select component
-   */
-  function DropdownInput({
-    state,
-    label,
-    placeholder,
-    children,
-  }: DropdownInputProps) {
-    const { value, config, error } = state;
-    const { label: name } = config;
-
-    return (
-      <label
-        htmlFor={name}
-        className="text-sm flex-1 block w-full font-semibold"
-      >
-        {label}
-        <select
-          className={`mt-2 font-normal w-full p-2 ${
-            error ? "border border-red-500" : ""
-          }`}
-          value={value.toString().length === 0 ? "none" : value.toString()}
-          onChange={onChange}
-          name={name}
-        >
-          <option value="none" disabled>
-            {placeholder}
-          </option>
-          {children}
-        </select>
-        <span className="font-normal text-xs text-red-500">{error}</span>
-      </label>
-    );
-  }
-
   // Static welcome section
   function Welcome() {
     return (
-      <RegistrationSection heading={`Welcome, ${session.user.name!}`}>
+      <React.Fragment>
         <p className="text-sm leading-7 text-slate-600">
           Welcome to the tutorify tutor application form! Join our team of
           passionate tutors and help students achieve their academic goals.
@@ -363,247 +271,313 @@ export default function TutorRegister({
         <Button className="w-full" onClick={() => setIndex(1)}>
           Get started
         </Button>
-      </RegistrationSection>
+      </React.Fragment>
     );
   }
 
-  // Doing components like {FormInput(...)} will prevent rerenders of the input.
   function BasicInfo() {
     return (
-      <RegistrationSection heading="Basic Info">
-        <div className="flex items-start gap-4">
-          {FormInput({ state: state.age, label: "Age" })}
-          {FormInput({ state: state.phone, label: "Phone Number" })}
-        </div>
-        {FormInput({ state: state.address, label: "Address" })}
+      <div className="prose mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <h1 className="text-green-600">Basic Information</h1>
+        <p className="text-slate-600">
+          Enter some basic information about yourself.
+        </p>
+        <div className="mb-16 space-y-6">
+          <h2 className="text-slate-800">Location</h2>
+          <div className="flex items-start gap-4">
+            <FormInput state={state.age} label="Age" onChange={onChange} />
+            <FormInput
+              state={state.phone}
+              label="Phone Number"
+              onChange={onChange}
+            />
+          </div>
+          <FormInput
+            state={state.address}
+            label="Address"
+            onChange={onChange}
+          />
+          <FormInput
+            state={state.address2}
+            label="Address (cont)."
+            onChange={onChange}
+          />
 
-        <div className="flex items-start gap-4">
-          {FormInput({ state: state.city, label: "City" })}
-          {FormInput({ state: state.state, label: "State" })}
-          {FormInput({ state: state.zip, label: "Postal Code" })}
+          <div className="flex items-start gap-4">
+            <FormInput state={state.city} label="City" onChange={onChange} />
+            <FormInput state={state.state} label="State" onChange={onChange} />
+          </div>
+
+          <div className="flex items-start gap-4">
+            <FormInput
+              state={state.zip}
+              label="Postal Code"
+              onChange={onChange}
+            />
+            <FormInput
+              state={state.country}
+              label="Country"
+              onChange={onChange}
+            />
+          </div>
         </div>
 
-        {FormInput({ state: state.country, label: "Country" })}
+        <div className="grid grid-cols-2 gap-16 ">
+          <div>
+            <h2 className="text-slate-800">Work Authorization</h2>
+            <BooleanInput
+              state={state.isWorkAuthorized}
+              labels={[
+                "I have authorization to work in the U.S",
+                "I do not have authorization to work in the U.S",
+              ]}
+              heading="Please choose from the following:"
+              onChange={onChange}
+            />
+            <BooleanInput
+              state={state.needsVisaSponsorship}
+              heading="Will you now or in the future require sponsorship for employment visa status (e.g., H-1B visa, F1-visa, and/or OPT Status)?"
+              onChange={onChange}
+            />
+            <BooleanInput
+              state={state.hasVisaDependency}
+              heading="Is your work authorization dependent upon the status of a visa(for example, but not limited to F1 or H-1B)?"
+              onChange={onChange}
+            />
+          </div>
+          <div>
+            <h2 className="text-slate-800">Technical Information</h2>
+            <BooleanInput
+              state={state.hasInternetConnection}
+              heading="Do you have regular access to a high-speed internet connection?"
+              onChange={onChange}
+            />
+
+            <BooleanInput
+              onChange={onChange}
+              state={state.hasTechnicalKnowledge}
+              heading="Do you have basic computer knowledge with the ability to edit certain files including, but not limited to, Office files (.docx, .xlsx, .pptx)"
+            />
+            <BooleanInput
+              onChange={onChange}
+              state={state.hasMicrophone}
+              heading="Do you possess a headset or speaker/microphone setup?"
+            />
+            <BooleanInput
+              onChange={onChange}
+              state={state.hasWebcam}
+              heading="Do you possess a webcam or integrated camera?"
+            />
+          </div>
+          <div></div>
+        </div>
         <IndexButtons schema={BasicInfoSchema} />
-      </RegistrationSection>
-    );
-  }
-
-  function WorkAuthorization() {
-    return (
-      <RegistrationSection heading="Work Authorization">
-        {BooleanInput({
-          state: state.isWorkAuthorized,
-          labels: [
-            "I have authorization to work in the U.S",
-            "I do not have authorization to work in the U.S",
-          ],
-          heading: "Please choose from the following:",
-        })}
-        {BooleanInput({
-          state: state.needsVisaSponsorship,
-          heading:
-            "Will you now or in the future require sponsorship for employment visa status (e.g., H-1B visa, F1-visa, and/or OPT Status)?",
-        })}
-        {BooleanInput({
-          state: state.hasVisaDependency,
-          heading:
-            "Is your work authorization dependent upon the status of a visa(for example, but not limited to F1 or H-1B)?",
-        })}
-        <IndexButtons schema={AuthorizationSchema} />
-      </RegistrationSection>
-    );
-  }
-
-  function TechnicalSpecs() {
-    return (
-      <RegistrationSection heading="Technical Specifications">
-        {BooleanInput({
-          state: state.hasInternetConnection,
-          heading:
-            "Do you have regular access to a high-speed internet connection?",
-        })}
-        {BooleanInput({
-          state: state.hasTechnicalKnowledge,
-          heading:
-            "Do you have basic computer knowledge with the ability to edit certain files including, but not limited to, Office files (.docx, .xlsx, .pptx)",
-        })}
-        {BooleanInput({
-          state: state.hasMicrophone,
-          heading: "Do you possess a headset or speaker/microphone setup?",
-        })}
-        {BooleanInput({
-          state: state.hasWebcam,
-          heading: "Do you possess a webcam or integrated camera?",
-        })}
-        <IndexButtons schema={TechnicalSchema} />
-      </RegistrationSection>
+      </div>
     );
   }
 
   function Education() {
     return (
-      <RegistrationSection heading="Education">
-        {FormInput({ state: state.school, label: "School" })}
-        {DropdownInput({
-          label: "Degree earned",
-          placeholder: "Degree earned",
-          state: state.degree,
-          children: generateArrayOptions(degrees),
-        })}
-        {FormInput({ state: state.fieldOfStudy, label: "Field of Study" })}
-        <div className="flex items-end gap-4 w-full">
-          {DropdownInput({
-            label: "Start date",
-            placeholder: "Month started",
-            state: state.educationMonthStarted,
-            children: generateArrayOptions(months),
-          })}
-          {DropdownInput({
-            placeholder: "Year started",
-            state: state.educationYearStarted,
-            children: generateYearOptions(),
-          })}
+      <div className="prose mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div>
+          <h1 className="text-green-600">Complete your profile.</h1>
+          <p>Give me some information about the test</p>
         </div>
-
-        <div className="flex items-start gap-4 w-full">
-          {DropdownInput({
-            label: "End date (or expected)",
-            placeholder: "Month ended",
-            state: state.educationMonthEnded,
-            children: generateArrayOptions(months),
-          })}
-          {DropdownInput({
-            state: state.educationYearEnded,
-            placeholder: "Year ended",
-            children: generateYearOptions(),
-          })}
+        <div>
+          <h2 className="text-slate-800">Photo</h2>
+          <input
+            type="file"
+            className="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg  file:text-sm file:font-semibold file:bg-white file:text-green-600 hover:file:bg-green-50 file:shadow-sm file:border-green-400 file:border file:outline-none"
+          />
         </div>
-        <IndexButtons schema={EducationSchema} />
-      </RegistrationSection>
-    );
-  }
-
-  const [_resume, setResume] = React.useState<File | undefined>();
-  const [stillWorks, setStillWorks] = React.useState<boolean>(false);
-
-  function Experience() {
-    function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-      const { target } = event;
-      const file = target.files?.[0];
-
-      setResume(file);
-    }
-
-    return (
-      <RegistrationSection heading="Experience">
-        {FormInput({ state: state.employmentTitle, label: "Title" })}
-
-        {DropdownInput({
-          label: "Employment type",
-          placeholder: "Employment type",
-          state: state.employmentType,
-          children: generateArrayOptions(employmentType),
-        })}
-        {FormInput({ state: state.companyName, label: "Company Name" })}
-        <div className="flex items-end gap-4 w-full">
-          {DropdownInput({
-            label: "Start date",
-            placeholder: "Month started",
-            state: state.employmentMonthStarted,
-            children: generateArrayOptions(months),
-          })}
-          {DropdownInput({
-            placeholder: "Year started",
-            state: state.employmentYearStarted,
-            children: generateYearOptions(),
+        <div>
+          <h2 className="text-slate-800">Heading</h2>
+          {FormInput({
+            onChange,
+            state: state.headline,
+            label: "Heading",
+            textarea: true,
           })}
         </div>
         <div>
-          <label>
-            <input
-              type="checkbox"
-              className="mr-2"
-              onClick={() => setStillWorks(!stillWorks)}
-            />
-            I still work here.
-          </label>
+          <h2 className="text-slate-800">Biography</h2>
+          {FormInput({
+            onChange,
+            state: state.biography,
+            label: "Biography",
+            textarea: true,
+            height: "h-[20vh]",
+          })}
         </div>
-        {!stillWorks ? (
+        <div className="space-y-8">
+          <h2 className="text-slate-800">Education</h2>
+          <FormInput state={state.school} label="School" onChange={onChange} />
+          <DropdownInput
+            onChange={onChange}
+            label="Degree earned"
+            placeholder="Degree earned"
+            state={state.degree}
+          >
+            {generateArrayOptions(degrees)}
+          </DropdownInput>
+          <FormInput
+            onChange={onChange}
+            state={state.fieldOfStudy}
+            label="Field of Study"
+          />
           <div className="flex items-end gap-4 w-full">
-            {DropdownInput({
-              label: "End date",
-              placeholder: "Month ended",
-              state: state.employmentMonthEnded,
-              children: generateArrayOptions(months),
-            })}
-            {DropdownInput({
-              state: state.employmentYearEnded,
-              placeholder: "Year ended",
-              children: generateYearOptions(),
-            })}
+            <DropdownInput
+              onChange={onChange}
+              label="Start date"
+              placeholder="Month started"
+              state={state.educationMonthStarted}
+            >
+              {generateArrayOptions(months)}
+            </DropdownInput>
+            <DropdownInput
+              onChange={onChange}
+              placeholder="Year started"
+              state={state.educationYearStarted}
+            >
+              {generateYearOptions()}
+            </DropdownInput>
           </div>
-        ) : null}
-        <div>
-          <p className="text-sm leading-7 text-slate-600">
-            Please sumbit your resume below in .pdf form
-          </p>
-          <input type="file" onChange={handleFileChange} />
+          <div className="flex items-end gap-4 w-full">
+            <DropdownInput
+              onChange={onChange}
+              label="End date (or expected)"
+              placeholder="Month ended"
+              state={state.educationMonthEnded}
+            >
+              {generateArrayOptions(months)}
+            </DropdownInput>
+            <DropdownInput
+              onChange={onChange}
+              state={state.educationYearEnded}
+              placeholder="Year ended"
+            >
+              {generateYearOptions()}
+            </DropdownInput>
+          </div>
         </div>
-        <IndexButtons schema={EmploymentSchema} />
-      </RegistrationSection>
+        <div className="space-y-8">
+          <h2 className="text-slate-800">Experience</h2>
+          <FormInput
+            onChange={onChange}
+            state={state.employmentTitle}
+            label="Title"
+          />
+
+          <DropdownInput
+            onChange={onChange}
+            label="Employment type"
+            placeholder="Employment type"
+            state={state.employmentType}
+          >
+            {generateArrayOptions(employmentType)}
+          </DropdownInput>
+          <FormInput
+            onChange={onChange}
+            state={state.companyName}
+            label="Company Name"
+          />
+          <div className="flex items-end gap-4 w-full">
+            <DropdownInput
+              onChange={onChange}
+              label="Start date"
+              placeholder="Month started"
+              state={state.employmentMonthStarted}
+            >
+              {generateArrayOptions(months)}
+            </DropdownInput>
+            <DropdownInput
+              onChange={onChange}
+              placeholder="Year started"
+              state={state.employmentYearStarted}
+            >
+              {generateYearOptions()}
+            </DropdownInput>
+          </div>
+          <div>
+            <label>
+              <input
+                type="checkbox"
+                className="mr-2 accent-green-600"
+                onClick={() => setStillWorks(!stillWorks)}
+              />
+              I still work here.
+            </label>
+          </div>
+          {!stillWorks ? (
+            <div className="flex items-end gap-4 w-full">
+              <DropdownInput
+                onChange={onChange}
+                label="End date"
+                placeholder="Month ended"
+                state={state.employmentMonthEnded}
+              >
+                {generateArrayOptions(months)}
+              </DropdownInput>
+              <DropdownInput
+                onChange={onChange}
+                state={state.employmentYearEnded}
+                placeholder="Year ended"
+              >
+                {generateYearOptions()}
+              </DropdownInput>
+            </div>
+          ) : null}
+          <div>
+            <p className="text-sm leading-7 text-slate-600">
+              Please sumbit your resume below in .pdf form
+            </p>
+            <input type="file" />
+          </div>
+        </div>{" "}
+        <IndexButtons schema={EducationSchema} />
+      </div>
     );
   }
 
-  function handleRender() {
-    switch (index) {
-      case 1:
-        return BasicInfo();
-      case 2:
-        return WorkAuthorization();
-      case 3:
-        return TechnicalSpecs();
-      case 4:
-        return Education();
-      case 5:
-        return Experience();
-      case 6:
-        return <Spinner />;
-      default:
-        return <Welcome />;
-    }
-  }
+  const [stillWorks, setStillWorks] = React.useState<boolean>(false);
+  const { data: session } = useSession();
 
-  return (
-    <section className="bg-slate-50 h-screen py-8 flex flex-col items-center justify-center">
-      <div className="w-full p-6 sm:p-8">
-        <div className="max-w-screen-lg space-y-6  mx-auto bg-white p-8 rounded">
-          {handleRender()}
+  const [subjectsSelected, setSubjectsSelected] = React.useState<string[]>([]);
+
+  return typeof session === "undefined" || session === null ? (
+    <RegisterComponent isTutor />
+  ) : (
+    <div className="h-screen overflow-y-hidden bg-slate-50">
+      <div className="absolute p-8 md:p-16 w-full bottom-0 ">
+        <div className="text-right space-y-4">
+          <p className="text-sm text-gray-600">
+            {subjectsSelected.length}{" "}
+            {subjectsSelected.length === 1 ? "subject" : "subjects"} selected.
+          </p>
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="open"
+              disabled={subjectsSelected.length === 0}
+              onClick={() => setSubjectsSelected([])}
+            >
+              Clear
+            </Button>
+            <Button disabled={subjectsSelected.length === 0}>Next</Button>
+          </div>
         </div>
       </div>
-    </section>
+      <div className="flex h-full overflow-y-auto flex-col">
+        <Navbar />
+        <main>
+          <section className="py-8">
+            <SubjectSection
+              subjectsSelected={subjectsSelected}
+              setSubjectsSelected={setSubjectsSelected}
+            />
+          </section>
+        </main>
+        <Footer />
+      </div>
+    </div>
   );
-}
-
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session) {
-    return { redirect: { destination: "/auth/signin" } };
-  }
-
-  // Make sure the user is not a tutor
-  const profile = await prisma.profile.findUnique({
-    where: { userId: session.user.id },
-    include: { tutorProfile: true },
-  });
-
-  if (!profile || profile.tutorProfile !== null)
-    return { redirect: { destination: "/" } };
-
-  return {
-    props: {
-      session,
-      id: profile.id,
-    },
-  };
 }

@@ -11,6 +11,22 @@ datasource db {
     relationMode = "prisma"
 }
 
+model User {
+    id            String       @id @default(cuid())
+    name          String?
+    email         String?      @unique
+    emailVerified DateTime?
+    image         String?
+    password      String?
+    accounts      Account[]
+    sessions      Session[]
+    role          Role         @default(USER)
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+    tutorProfile  Tutor?
+    Appointment   Appointment?
+}
+
 model Account {
     id                String  @id @default(cuid())
     userId            String
@@ -30,20 +46,6 @@ model Account {
     @@index([userId])
 }
 
-model Image {
-    id        String    @id @default(cuid())
-    avatars   Profile[] @relation(name: "AvatarFile")
-    type      String
-    url       String
-    mime      String
-    name      String
-    extension String
-    size      Int
-    height    Int?
-    width     Int?
-    createdAt DateTime  @default(now())
-}
-
 model Session {
     id           String   @id @default(cuid())
     sessionToken String   @unique
@@ -54,31 +56,16 @@ model Session {
     @@index([userId])
 }
 
-model Profile {
-    id           String        @id @default(cuid())
-    user         User          @relation(fields: [userId], references: [id])
-    userId       String        @unique
-    name         String
-    tutorProfile Tutor?
-    avatar       Image?        @relation(name: "AvatarFile", fields: [avatarId], references: [id], onDelete: Cascade)
-    avatarId     String?       @unique
-    biography    String?
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
-    appointment  Appointment[]
-
-    @@index([userId])
-}
-
 model Tutor {
     id                    String         @id @default(cuid())
-    profile               Profile        @relation(fields: [profileId], references: [id])
-    profileId             String         @unique
+    user                  User           @relation(fields: [userId], references: [id])
+    userId                String         @unique
     hourlyRate            Float          @default(0)
+    biography             String
+    headline              String
     subjects              Subject[]
     appointments          Appointment[]
     availability          Availability[]
-    status                TutorStatus
     age                   Int
     phone                 String
     location              Location       @relation(fields: [locationId], references: [id])
@@ -134,12 +121,6 @@ model Location {
     tutor    Tutor?
 }
 
-enum TutorStatus {
-    ACTIVE
-    PENDING
-    DISABLED
-}
-
 model Availability {
     id      String   @id @default(cuid())
     tutor   Tutor    @relation(fields: [tutorId], references: [id])
@@ -157,11 +138,13 @@ model Subject {
     appointments Appointment[]
     createdAt    DateTime      @default(now())
     updatedAt    DateTime      @updatedAt
+    coreSubject  CoreSubject
+    level        SubjectLevel  @default(ALL)
 }
 
 model Appointment {
     id          String            @id @default(cuid())
-    student     Profile           @relation(fields: [studentId], references: [id])
+    student     User              @relation(fields: [studentId], references: [id])
     studentId   String            @unique
     tutor       Tutor             @relation(fields: [tutorId], references: [id])
     tutorId     String
@@ -182,19 +165,6 @@ model Appointment {
     @@index([subjectId])
 }
 
-model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    password      String?
-    accounts      Account[]
-    sessions      Session[]
-    profile       Profile?
-    role          Role      @default(USER)
-}
-
 model VerificationToken {
     identifier String
     token      String   @unique
@@ -205,16 +175,28 @@ model VerificationToken {
 
 enum Role {
     USER
+    DISABLED_USER
+    PENDING_TUTOR
+    VERIFIED_TUTOR
+    DISABLED_TUTOR
     ADMIN
     SUPERUSER
 }
 
 enum SubjectLevel {
+    ALL
     ELEMENTARY
     MIDDLE_SCHOOL
     HIGH_SCHOOL
     AP
     COLLEGE
+}
+
+enum CoreSubject {
+    MATH
+    SCIENCE
+    LANGUAGE_ARTS
+    SOCIAL_STUDIES
 }
 
 enum AppointmentStatus {

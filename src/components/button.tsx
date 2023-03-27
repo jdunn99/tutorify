@@ -2,7 +2,7 @@ import React from "react";
 
 export const BUTTON_VARIANTS = {
   base: "text-white border border-green-200 bg-green-500 hover:bg-green-700 shadow-sm disabled:bg-green-200",
-  open: "text-green-600 border-green-400 border bg-white hover:bg-green-50 shadow-sm ",
+  open: "text-green-600 border-green-400 border bg-white hover:bg-green-50 shadow-sm disabled:bg-gray-50 disabled:text-gray-300 disabled:border-gray-300",
   ghost: "text-gray-600 hover:text-green-600 bg-transparent",
 };
 

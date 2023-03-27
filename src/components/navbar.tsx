@@ -1,16 +1,21 @@
+import _app from "@/pages/_app";
 import { api } from "@/utils/api";
 import { WithSession } from "@/utils/auth";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   MdCalendarMonth,
-  MdHelpCenter,
+  MdDashboard,
+  MdHistory,
+  MdLogout,
   MdMessage,
   MdNotifications,
-  MdPerson,
+  MdPayment,
+  MdSettings,
 } from "react-icons/md";
-import { Button, ButtonLink } from "./button";
+import { ButtonLink } from "./button";
 import {
   Dropdown,
   DropdownContent,
@@ -30,6 +35,39 @@ function NotificationsMenu() {
   );
 }
 
+const AVATAR_MENU_ITEMS = [
+  {
+    text: "Dashboard",
+    icon: <MdDashboard />,
+    href: "/profile/dashboard",
+  },
+  {
+    text: "Appointments",
+    icon: <MdCalendarMonth />,
+    href: "/profile/appointments",
+  },
+  {
+    text: "Messages",
+    icon: <MdMessage />,
+    href: "/profile/messages",
+  },
+  {
+    text: "Payment Information",
+    icon: <MdPayment />,
+    href: "/profile/payment",
+  },
+  {
+    text: "Transactions",
+    icon: <MdHistory />,
+    href: "/profile/transactions",
+  },
+  {
+    text: "Settings",
+    icon: <MdSettings />,
+    href: "/profile/settings",
+  },
+];
+
 function AvatarMenu({ session }: WithSession) {
   return (
     <Dropdown
@@ -43,16 +81,27 @@ function AvatarMenu({ session }: WithSession) {
         />
       }
     >
-      <DropdownContent align="start" alignOffset={5}>
+      <DropdownContent align="start" sideOffset={4}>
         <DropdownLabel>{session.user.name}</DropdownLabel>
-        <DropdownItem className="py-2 cursor-pointer hover:underline">
-          <MdPerson className="text-green-600 text-lg" /> My Account
-        </DropdownItem>
-        <DropdownItem className="py-2 cursor-pointer hover:underline">
-          <MdCalendarMonth className="text-green-600 text-lg" /> Sessions
-        </DropdownItem>
-        <DropdownItem className="py-2 cursor-pointer hover:underline">
-          <MdHelpCenter className="text-green-600 text-lg" /> Help
+        {AVATAR_MENU_ITEMS.map(({ text, icon, href }, index) => (
+          <DropdownItem className="cursor-pointer hover:underline" key={index}>
+            <Link href={href} className="flex items-center gap-2">
+              <span className="inline-block text-green-600 text-lg">
+                {icon}
+              </span>{" "}
+              {text}
+            </Link>
+          </DropdownItem>
+        ))}
+
+        <DropdownItem
+          className="cursor-pointer hover:underline"
+          onClick={() => void signOut({ callbackUrl: "/" })}
+        >
+          <span className="inline-block text-green-600 text-lg">
+            <MdLogout />
+          </span>
+          Logout
         </DropdownItem>
       </DropdownContent>
     </Dropdown>
@@ -76,34 +125,37 @@ function Unauthenticated() {
 }
 
 function Authenticated({ session }: WithSession) {
-  const { data: profile } = api.profile.getFromSession.useQuery(undefined, {
-    enabled: typeof session !== "undefined",
-  });
+  let shouldRender: boolean = false;
+  switch (session.user.role) {
+    case "USER":
+      shouldRender = true;
+      break;
+    case "VERIFIED_TUTOR":
+      shouldRender = true;
+      break;
+    case "ADMIN":
+      shouldRender = true;
+    case "SUPERUSER":
+      shouldRender = true;
+    default:
+      shouldRender = false;
+      break;
+  }
 
-  if (!profile) return null;
-
-  return (
+  return shouldRender ? (
     <div className="flex items-center gap-2">
-      {(session.user.role !== "USER" ||
-        typeof profile.tutorProfile !== "undefined") && (
-        <Link
-          href={`/profile/${profile.id}/messages`}
-          className="md:inline-block rounded-lg cursor-pointer hidden py-1 px-2 text-lg text-slate-600 font-semibold hover:text-green-600"
-        >
-          <MdMessage />
-        </Link>
-      )}
-
       <NotificationsMenu />
       <AvatarMenu session={session} />
     </div>
-  );
+  ) : null;
 }
 
-export function Navbar({ session }: NavbarProps) {
+export function Navbar() {
+  const { data: session } = useSession();
+
   return (
     <header className="py-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <nav className="relative z-10 flex items-center justify-between">
           <div className="flex items-center md:gap-8">
             <Link href="/" className="font-bold">
@@ -113,25 +165,25 @@ export function Navbar({ session }: NavbarProps) {
           <div className="flex items-center gap-4 md:gap-8">
             <div className="hidden md:flex md:gap-4">
               <Link
-                href="/"
+                href="/#subjects"
                 className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
               >
                 Subjects
               </Link>
               <Link
-                href="/"
+                href="/#features"
                 className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
               >
                 Services
               </Link>
               <Link
-                href="/"
+                href="/about"
                 className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
               >
                 About Us
               </Link>
             </div>
-            {typeof session !== "undefined" ? (
+            {typeof session !== "undefined" && session !== null ? (
               <Authenticated session={session} />
             ) : (
               <Unauthenticated />

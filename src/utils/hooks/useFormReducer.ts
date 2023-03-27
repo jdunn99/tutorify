@@ -230,8 +230,14 @@ export function useForm<T extends z.ZodObject<any>>(schema: T, key?: string) {
    *
    * @param {React.ChangeEvent<HTMLInputElement>} event The event object containing the field name and value.
    */
-  function onChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function onChange(
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+    actualValue?: any
+  ) {
     let { name, value, type } = event.target;
+    if (typeof actualValue !== "undefined") value = actualValue;
 
     dispatch({
       type: "UPDATE_FIELD",

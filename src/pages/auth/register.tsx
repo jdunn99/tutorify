@@ -2,7 +2,12 @@ import type {
   GetServerSidePropsContext,
   InferGetServerSidePropsType,
 } from "next";
-import { getProviders, signIn } from "next-auth/react";
+import {
+  type ClientSafeProvider,
+  getProviders,
+  type LiteralUnion,
+  signIn,
+} from "next-auth/react";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
 import { useForm, validate } from "@/utils/hooks/useFormReducer";
@@ -12,6 +17,8 @@ import { Button } from "@/components/button";
 import { api } from "@/utils/api";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import type { BuiltInProviderType } from "next-auth/providers";
+import { Navbar } from "@/components/navbar";
 
 const CredentialsSchema = z.object({
   name: z.string(),
@@ -20,13 +27,21 @@ const CredentialsSchema = z.object({
   "confirm password": z.string().min(6).describe("password"),
 });
 
-export default function SignUp({
+interface RegisterProps {
+  providers?:
+    | Record<LiteralUnion<BuiltInProviderType, string>, ClientSafeProvider>
+    | never[];
+  isTutor?: boolean;
+  redirectUrl?: string;
+}
+
+export function RegisterComponent({
+  redirectUrl,
   providers,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  isTutor = false,
+}: RegisterProps) {
   const { state, onChange, dispatch } = useForm(CredentialsSchema);
   const { mutateAsync: register } = api.user.register.useMutation();
-  const { mutateAsync: createProfile } =
-    api.profile.upsertProfile.useMutation();
   const router = useRouter();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -42,20 +57,20 @@ export default function SignUp({
     // should have some error handling in the future
     if (password !== confirmed) return;
 
-    await register({ email, name, password });
+    await register({ email, name, password, isTutor });
     await signIn("credentials", { email, password });
-    await createProfile({});
 
-    router.push("/");
+    if (typeof redirectUrl === "string") router.push(redirectUrl);
   }
 
   return (
-    <section className="bg-slate-50">
-      <div className="flex flex-col items-center justify-center px-6 py-8 h-screen mx-auto md:h-screen lg:py-0 bg-slate-50">
-        <div className="w-full bg-white rounded-lg shadow border border-slate-200 md:mt-0 sm:max-w-md xl:p-0">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
+    <div className="h-screen overflow-y-hidden bg-slate-50">
+      <Navbar />
+      <main className="h-[85vh] flex items-center justify-center">
+        <section className="flex-1 mx-auto p-4">
+          <div className="bg-white rounded-lg shadow mx-auto border border-slate-200 md:mt-0 sm:max-w-md p-8 space-y-4">
             <h1 className="text-xl font-bold text-gray-900 md:text-2xl">
-              Register
+              {isTutor ? "Create your tutor account." : "Register."}
             </h1>
             <form className="space-y-4" onSubmit={onSubmit}>
               {Object.entries(state).map((entry) => {
@@ -84,23 +99,24 @@ export default function SignUp({
               })}
 
               <Button type="submit" className="w-full">
-                Register.
+                {isTutor ? "Create your tutor account." : "Register."}
               </Button>
             </form>
             <p className="text-sm text-center">Or</p>
-            {Object.values(providers).map((provider) =>
-              provider.name === "Credentials" ? null : (
-                <div key={provider.name}>
-                  <Button
-                    className="w-full"
-                    variant="open"
-                    onClick={() => signIn(provider.id)}
-                  >
-                    Register with {provider.name}
-                  </Button>
-                </div>
-              )
-            )}
+            {providers &&
+              Object.values(providers).map((provider) =>
+                provider.name === "Credentials" ? null : (
+                  <div key={provider.name}>
+                    <Button
+                      className="w-full"
+                      variant="open"
+                      onClick={() => signIn(provider.id)}
+                    >
+                      Register with {provider.name}
+                    </Button>
+                  </div>
+                )
+              )}
 
             <p className="text-sm text-center">
               Already have an account? Sign in{" "}
@@ -111,20 +127,28 @@ export default function SignUp({
                 here.
               </Link>
             </p>
-            <p className="text-sm text-center">
-              Interested in becoming a tutor?{" "}
-              <Link
-                href="/auth/tutor"
-                className="font-bold text-green-600 hover:underline"
-              >
-                Apply now.
-              </Link>
-            </p>
+            {!isTutor && (
+              <p className="text-sm text-center">
+                Interested in becoming a tutor?{" "}
+                <Link
+                  href="/auth/tutor"
+                  className="font-bold text-green-600 hover:underline"
+                >
+                  Apply now.
+                </Link>
+              </p>
+            )}
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
+      </main>
+    </div>
   );
+}
+
+export default function SignUp({
+  providers,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  return <RegisterComponent providers={providers} redirectUrl="/" />;
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {

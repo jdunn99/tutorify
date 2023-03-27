@@ -1,4 +1,6 @@
 import { Button } from "@/components/button";
+import { Dropdown, DropdownContent, DropdownItem } from "@/components/dropdown";
+import { Footer } from "@/components/footer";
 import { Spinner } from "@/components/loading";
 import { Navbar } from "@/components/navbar";
 import { Search } from "@/components/search";
@@ -6,6 +8,7 @@ import { api } from "@/utils/api";
 import { GetServerSidePropsContext } from "next";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import React from "react";
 
 interface TutorCardProps {
   id: string;
@@ -140,7 +143,7 @@ function TutorCard(tutor: TutorCardProps) {
         width={64}
       />
       <div className="flex-1 space-y-2">
-        <h2 className="text-xl  font-semibold text-green-600">
+        <h2 className="text-xl font-semibold text-green-600">
           {tutor.profile.name}
         </h2>
         <p>{tutor._count.appointments} sessions taught</p>
@@ -164,10 +167,32 @@ function TutorCard(tutor: TutorCardProps) {
   );
 }
 
+interface SortMenuProps {
+  onClick(name: string): void;
+  active: string;
+}
+
+function SortMenu({ active, onClick }: SortMenuProps) {
+  return (
+    <Dropdown heading={active} variant="base" size="base">
+      <DropdownContent align="end" sideOffset={4}>
+        <DropdownItem onClick={() => onClick("Suggested")}>
+          Suggested
+        </DropdownItem>
+        <DropdownItem onClick={() => onClick("Rating")}>Rating</DropdownItem>
+        <DropdownItem onClick={() => onClick("Lowest Price")}>
+          Lowest Price
+        </DropdownItem>
+      </DropdownContent>
+    </Dropdown>
+  );
+}
+
 export default function SearchPage() {
   const router = useRouter();
   const { query: searchQuery } = router;
   const { query } = searchQuery || "";
+  const [active, setActive] = React.useState<string>("Suggested");
 
   const { data: searchResult, isLoading } = api.tutor.getByQuery.useQuery(
     {
@@ -203,7 +228,7 @@ export default function SearchPage() {
                       <p className="text-sm font-semibold text-gray-600">
                         Sort:{" "}
                       </p>
-                      <Button>TODO: Menu</Button>
+                      <SortMenu active={active} onClick={setActive} />
                     </div>
                   </div>
 
@@ -217,6 +242,7 @@ export default function SearchPage() {
             </div>
           </section>
         </main>
+        <Footer />
       </div>
     </div>
   );

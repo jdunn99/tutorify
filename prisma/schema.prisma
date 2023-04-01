@@ -57,44 +57,45 @@ model Session {
 }
 
 model Tutor {
-    id                    String         @id @default(cuid())
-    user                  User           @relation(fields: [userId], references: [id])
-    userId                String         @unique
-    hourlyRate            Float          @default(0)
-    biography             String
-    headline              String
+    id                    String            @id @default(cuid())
+    user                  User              @relation(fields: [userId], references: [id])
+    userId                String            @unique
+    hourlyRate            Float?            @default(0)
+    biography             String?
+    headline              String?
     subjects              Subject[]
     appointments          Appointment[]
     availability          Availability[]
-    age                   Int
-    phone                 String
-    location              Location       @relation(fields: [locationId], references: [id])
-    locationId            String         @unique
-    isWorkAuthorized      Boolean
-    needsVisaSponsorship  Boolean
-    hasVisaDependency     Boolean
-    hasInternetConnection Boolean
-    hasTechnicalKnowledge Boolean
-    hasMicrophone         Boolean
-    hasWebcam             Boolean
-    education             Education      @relation(fields: [educationId], references: [id])
-    educationId           String         @unique
-    employment            Employment     @relation(fields: [employmentId], references: [id])
-    employmentId          String         @unique
-    createdAt             DateTime       @default(now())
-    updatedAt             DateTime       @updatedAt
+    age                   Int?
+    phone                 String?
+    location              Location?         @relation(fields: [locationId], references: [id])
+    locationId            String?           @unique
+    isWorkAuthorized      Boolean?
+    needsVisaSponsorship  Boolean?
+    hasVisaDependency     Boolean?
+    hasInternetConnection Boolean?
+    hasTechnicalKnowledge Boolean?
+    hasMicrophone         Boolean?
+    hasWebcam             Boolean?
+    education             Education?        @relation(fields: [educationId], references: [id])
+    educationId           String?           @unique
+    employment            Employment?       @relation(fields: [employmentId], references: [id])
+    employmentId          String?           @unique
+    createdAt             DateTime          @default(now())
+    updatedAt             DateTime          @updatedAt
     resume                String?
+    applicationStatus     ApplicationStatus @default(welcome)
 }
 
 model Education {
-    id           String @id @default(cuid())
+    id           String  @id @default(cuid())
     school       String
     degree       String
     fieldOfStudy String
     yearStarted  String
-    yearEnded    String
+    yearEnded    String?
     monthStarted String
-    monthEnded   String
+    monthEnded   String?
     tutor        Tutor?
 }
 
@@ -203,4 +204,12 @@ enum AppointmentStatus {
     SCHEDULED
     CANCELLED
     COMPLETED
+}
+
+enum ApplicationStatus {
+    welcome
+    subject_selection
+    basic_info
+    profile
+    submitted
 }

@@ -15,21 +15,39 @@ import {
   MdPayment,
   MdSettings,
 } from "react-icons/md";
-import { ButtonLink } from "./button";
+import { Badge, IconBadge } from "./badge";
+import { Button, ButtonLink } from "./button";
 import {
   Dropdown,
   DropdownContent,
   DropdownItem,
   DropdownLabel,
 } from "./dropdown";
-
-type NavbarProps = Partial<WithSession>;
+import { NavLink } from "./links";
 
 function NotificationsMenu() {
   return (
-    <Dropdown heading={<MdNotifications />}>
-      <DropdownContent align="start" alignOffset={5}>
-        <DropdownItem>No new notifications</DropdownItem>
+    <Dropdown
+      heading={<IconBadge variant="danger" size="icon_dot" icon={<MdNotifications />} />}
+      variant="ghostColored"
+    >
+      <DropdownContent align="start" alignOffset={5} className="max-w-xs">
+        <div className="flex justify-between items-center pl-4 pr-2 pb-2">
+          <p className="text-slate-800 text-sm font-semibold">Notifications</p>
+          <Button variant="ghostColored" size="xs">
+            Mark all as read
+          </Button>
+        </div>
+        <DropdownItem>
+          <div className="flex justify-between items-center p-0 gap-2">
+            <p className="text-xs text-slate-800">
+              No payment method added for your account. Add one now.
+            </p>
+            <Button variant="ghost" size="xs">
+              x
+            </Button>
+          </div>
+        </DropdownItem>
       </DropdownContent>
     </Dropdown>
   );
@@ -68,7 +86,30 @@ const AVATAR_MENU_ITEMS = [
   },
 ];
 
-function AvatarMenu({ session }: WithSession) {
+interface ProfileNavLinkProps {
+  route: string;
+  href: string;
+  children: React.ReactNode;
+}
+
+export function ProfileNavbar({
+  session,
+  route,
+}: WithSession & { route: string }) {
+  return (
+    <header className="w-full bg-white border-b border-slate-200 px-8 py-2">
+      <nav className="flex items-center justify-between mx-auto max-w-7xl px-8">
+        <h3 className="text-lg font-bold text-slate-800">{route}</h3>
+        <div className="flex items-center gap-8">
+          <NotificationsMenu />
+          <AvatarMenu session={session} />
+        </div>
+      </nav>
+    </header>
+  );
+}
+
+export function AvatarMenu({ session }: WithSession) {
   return (
     <Dropdown
       heading={
@@ -111,12 +152,9 @@ function AvatarMenu({ session }: WithSession) {
 function Unauthenticated() {
   return (
     <div className="flex items-center gap-2">
-      <Link
-        href="/auth/signin"
-        className="md:inline-block rounded-lg hidden py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
-      >
+      <ButtonLink href="/auth/signin" variant="ghost">
         Sign In
-      </Link>
+      </ButtonLink>
       <ButtonLink href="/auth/register" className="hidden md:inline-block">
         Get started today
       </ButtonLink>
@@ -164,24 +202,9 @@ export function Navbar() {
           </div>
           <div className="flex items-center gap-4 md:gap-8">
             <div className="hidden md:flex md:gap-4">
-              <Link
-                href="/#subjects"
-                className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
-              >
-                Subjects
-              </Link>
-              <Link
-                href="/#features"
-                className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
-              >
-                Services
-              </Link>
-              <Link
-                href="/about"
-                className="inline-block rounded-lg py-1 px-2 text-sm text-slate-600 font-semibold hover:text-green-600"
-              >
-                About Us
-              </Link>
+              <NavLink href="/#subjects">Subjects</NavLink>
+              <NavLink href="/#services">Services</NavLink>
+              <NavLink href="/about_us">About Us</NavLink>
             </div>
             {typeof session !== "undefined" && session !== null ? (
               <Authenticated session={session} />

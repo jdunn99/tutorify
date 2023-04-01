@@ -248,5 +248,12 @@ export function useForm<T extends z.ZodObject<any>>(schema: T, key?: string) {
     });
   }
 
-  return { state, dispatch, onChange };
+  function validateSchema() {
+    const { errors, result } = validate(state, schema);
+    if (errors) dispatch({ type: "VALIDATE", payload: { errors } });
+
+    return { result };
+  }
+
+  return { state, dispatch, onChange, validate: validateSchema };
 }

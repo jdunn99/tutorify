@@ -25,9 +25,8 @@
   transform: rotate(180deg);
 }
 
-.DropdownMenuTrigger[data-state="open"]  * {
+.DropdownMenuTrigger[data-state="open"] {
   color: rgb(22 163 74);
-
 }
 
 .DropdownMenuContent,
@@ -39,7 +38,7 @@
 .DropdownMenuContent[data-side="top"],
 .DropdownMenuSubContent[data-side="top"] {
   animation-name: slideDownAndFade;
-} 
+}
 .DropdownMenuContent[data-side="right"],
 .DropdownMenuSubContent[data-side="right"] {
   animation-name: slideLeftAndFade;

@@ -7,10 +7,11 @@ interface DropdownProps {
   children?: React.ReactNode;
   variant?: keyof typeof BUTTON_VARIANTS;
   size?: keyof typeof BUTTON_SIZES;
+  className?: string;
 }
 
 export const DROPDOWN_VARIANTS = {
-  base: "px-4 py-2 relative rounded hover:bg-green-100 select-none text-gray-600 text-sm outline-none",
+  base: "p-2 relative rounded hover:bg-green-100 select-none text-slate-600 hover:text-slate-800 hover:font-semibold  text-sm outline-none cursor-pointer duration-100",
 };
 export const DROPDOWN_CONTENT_VARIANTS = {
   base: "DropdownMenuContent relative min-w-[220px] z-10 bg-white rounded-lg p-2 shadow-lg border border-green-600",
@@ -88,11 +89,16 @@ export function Dropdown({
   children,
   variant = "ghost",
   size = "icon",
+  className = "",
 }: DropdownProps) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild className="DropdownMenuTrigger z-0">
-        <Button variant={variant} size={size} className="outline-none">
+        <Button
+          variant={variant}
+          size={size}
+          className={`outline-none ${className}`}
+        >
           {heading}
         </Button>
       </DropdownMenu.Trigger>

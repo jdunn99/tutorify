@@ -60,6 +60,8 @@ export const userRouter = router({
 
       if (!user) throw new Error("Something went wrong");
 
+      if (isTutor) await prisma.tutor.create({ data: { userId: user.id } });
+
       // Create account for next-auth.
       await prisma.account.create({
         data: {

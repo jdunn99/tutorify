@@ -97,8 +97,8 @@ export function ProfileNavbar({
   route,
 }: WithSession & { route: string }) {
   return (
-    <header className="w-full bg-white border-b border-slate-200 px-8 py-2">
-      <nav className="flex items-center justify-between mx-auto max-w-7xl px-8">
+    <header className="w-full bg-white border-b border-slate-200  py-2">
+      <nav className="flex items-center justify-between mx-auto max-w-7xl px-6">
         <h3 className="text-lg font-bold text-slate-800">{route}</h3>
         <div className="flex items-center gap-8">
           <NotificationsMenu />
@@ -125,11 +125,8 @@ export function AvatarMenu({ session }: WithSession) {
       <DropdownContent align="start" sideOffset={4}>
         <DropdownLabel>{session.user.name}</DropdownLabel>
         {AVATAR_MENU_ITEMS.map(({ text, icon, href }, index) => (
-          <DropdownItem className="cursor-pointer hover:underline" key={index}>
-            <Link href={href} className="flex items-center gap-2">
-              <span className="inline-block text-green-600 text-lg">
-                {icon}
-              </span>{" "}
+          <DropdownItem className="cursor-pointer hover:underline" key={index} icon={icon}>
+            <Link href={href} >
               {text}
             </Link>
           </DropdownItem>

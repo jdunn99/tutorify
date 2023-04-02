@@ -1,9 +1,32 @@
 import { Footer } from "@/components/footer";
+import { NavLink } from "@/components/links";
 import { ProfileNavbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
 import type { WithSession } from "@/utils/auth";
 import { useRouter } from "next/router";
 import React from "react";
+import { MdArrowRightAlt } from "react-icons/md";
+
+interface HeadingProps {
+  link?: {
+    href: string;
+    text: string;
+  };
+  children: React.ReactNode;
+}
+
+export function Heading({ link, children }: HeadingProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <h3 className="text-slate-700 m-0 text-xl font-semibold">{children}</h3>
+      {link && (
+        <NavLink href={link.href} variant="green">
+          {link.text} <MdArrowRightAlt className="inline-block" />
+        </NavLink>
+      )}
+    </div>
+  );
+}
 
 export function ProfileLayout({
   children,

@@ -18,25 +18,31 @@ export const DROPDOWN_CONTENT_VARIANTS = {
 };
 
 export const DROPDOWN_LABEL_VARIANTS = {
-  base: "px-4 leading-loose text-gray-600 font-semibold text-sm outline-none",
+  base: "px-2 leading-loose text-gray-600 font-semibold text-sm outline-none",
 };
 
 type DropdownItemProps = {
   variant?: keyof typeof DROPDOWN_VARIANTS;
   children?: React.ReactNode;
+  icon?: JSX.Element;
 } & React.ComponentPropsWithoutRef<typeof DropdownMenu.Item>;
 
 export const DropdownItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenu.Item>,
   DropdownItemProps
->(({ children, variant = "base", className = "", ...rest }, ref) => {
+>(({ children, variant = "base", className = "", icon, ...rest }, ref) => {
   return (
     <DropdownMenu.Item
       className={`${DROPDOWN_VARIANTS[variant]} ${className}`}
       ref={ref}
       {...rest}
     >
-      <div className="flex gap-2 items-center">{children}</div>
+      <div className="flex gap-2 items-center">
+        {typeof icon !== "undefined" ? (
+          <span className="inline-block text-green-600 text-lg">{icon}</span>
+        ) : null}
+        {children}
+      </div>
     </DropdownMenu.Item>
   );
 });
@@ -48,7 +54,7 @@ type DropdownContentProps = {
 } & React.ComponentPropsWithoutRef<typeof DropdownMenu.Content>;
 
 export const DropdownContent = React.forwardRef<
-  React.ElementRef<typeof DropdownMenu.Content>,
+  React.ElementRef<typeof DropdownMenu.Item>,
   DropdownContentProps
 >(({ children, variant = "base", className = "", ...rest }, ref) => {
   return (

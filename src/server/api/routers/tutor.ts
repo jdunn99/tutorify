@@ -5,59 +5,51 @@ import {
   protectedProcedure,
   adminProtectedProcedure,
 } from "@/server/api/trpc";
-import { TutorStatus } from "@prisma/client";
+import { ApplicationStatus } from "@prisma/client";
 
-const BasicInfoSchema = z.object({
+const BasicInfo = z.object({
   age: z.number().int().min(18).max(99).default(18),
   phone: z.string().describe("tel").min(10),
-  address: z.string().min(1),
-  address2: z.string().optional(),
-  city: z.string().min(1),
-  state: z.string().min(1), // enum ?
-  zip: z.string().min(5),
-  country: z.string().min(1),
-});
-
-const AuthorizationSchema = z.object({
+  location: z.object({
+    address: z.string().min(1),
+    address2: z.string().optional(),
+    city: z.string().min(1),
+    state: z.string().min(1), // enum ?
+    zip: z.string().min(5),
+    country: z.string().min(1),
+  }),
   isWorkAuthorized: z.boolean().describe("checkbox"),
   needsVisaSponsorship: z.boolean().describe("checkbox"),
   hasVisaDependency: z.boolean().describe("checkbox"),
-});
-
-const TechnicalSchema = z.object({
   hasInternetConnection: z.boolean().describe("checkbox"),
   hasTechnicalKnowledge: z.boolean().describe("checkbox"),
   hasMicrophone: z.boolean().describe("checkbox"),
   hasWebcam: z.boolean().describe("checkbox"),
 });
 
-const EducationSchema = z.object({
-  school: z.string().min(1),
-  degree: z.string(),
-  fieldOfStudy: z.string(),
-  educationYearStarted: z.string().min(4).max(4),
-  educationYearEnded: z.string().optional(),
-  educationMonthStarted: z.string(),
-  educationMonthEnded: z.string().optional(),
+const Profile = z.object({
+  education: z.object({
+    school: z.string().min(1),
+    degree: z.string(),
+    fieldOfStudy: z.string(),
+    yearStarted: z.string().min(4).max(4),
+    yearEnded: z.string().optional(),
+    monthStarted: z.string(),
+    monthEnded: z.string().optional(),
+  }),
+  employment: z.object({
+    title: z.string().nonempty(),
+    type: z.string(),
+    companyName: z.string().min(1),
+    yearStarted: z.string().min(4).max(4),
+    yearEnded: z.string().default("Present"),
+    monthStarted: z.string(),
+    monthEnded: z.string().optional(),
+  }),
+  headline: z.string(),
+  biography: z.string(),
+  hourlyRate: z.number().nonnegative(),
 });
-
-const EmploymentSchema = z.object({
-  employmentTitle: z.string().nonempty(),
-  employmentType: z.string(),
-  companyName: z.string().min(1),
-  employmentMonthStarted: z.string(),
-  employmentYearStarted: z.string(),
-  employmentMonthEnded: z.string(),
-  employmentYearEnded: z.string(),
-});
-
-const schema = z
-  .object({})
-  .merge(AuthorizationSchema)
-  .merge(BasicInfoSchema)
-  .merge(TechnicalSchema)
-  .merge(EducationSchema)
-  .merge(EmploymentSchema);
 
 export const TutorData = z.object({
   hourlyRate: z.number().nonnegative(),
@@ -78,7 +70,7 @@ export const tutorRouter = router({
       const { prisma } = ctx;
       const { id } = input;
 
-      return await prisma.profile.findUnique({
+      return await prisma.user.findUnique({
         where: { id },
         include: { tutorProfile: true },
       });
@@ -152,10 +144,9 @@ export const tutorRouter = router({
         select: {
           id: true,
           hourlyRate: true,
-          profile: {
+          user: {
             select: {
               name: true,
-              biography: true,
             },
           },
           _count: {
@@ -188,117 +179,92 @@ export const tutorRouter = router({
       return result;
     }),
 
+  getApplicationProgress: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma, session } = ctx;
+    const { user } = session;
+
+    return await prisma.tutor.findUnique({
+      where: { userId: user.id },
+      select: { applicationStatus: true },
+    });
+  }),
+
+  updateApplication: protectedProcedure
+    .input(
+      z.object({
+        applicationStatus: z.nativeEnum(ApplicationStatus),
+        subjects: z.string().cuid().array().min(1).max(5).optional(),
+        basicInfo: BasicInfo.optional(),
+        profile: Profile.optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { applicationStatus, subjects, basicInfo, profile } = input;
+      const { prisma, session } = ctx;
+      const { user } = session;
+
+      const { location, ...rest } = basicInfo || {};
+      const { employment, education, ...profileData } = profile || {};
+
+      return await prisma.tutor.update({
+        where: { userId: user.id },
+        data: {
+          applicationStatus,
+          subjects:
+            typeof subjects !== "undefined"
+              ? {
+                  set: [],
+                  connect: subjects.map((id) => ({ id })),
+                }
+              : undefined,
+          location:
+            typeof location !== "undefined"
+              ? {
+                  create: location,
+                }
+              : undefined,
+
+          education:
+            typeof education !== "undefined"
+              ? {
+                  create: education,
+                }
+              : undefined,
+          employment:
+            typeof employment !== "undefined"
+              ? {
+                  create: employment,
+                }
+              : undefined,
+
+          ...rest,
+          ...profileData,
+        },
+      });
+    }),
+
+  addSubjectsToTutor: protectedProcedure
+    .input(z.object({ subjects: z.string().cuid().array().min(1).max(5) }))
+    .mutation(async ({ ctx, input }) => {
+      const { prisma, session } = ctx;
+      const { subjects } = input;
+
+      return await prisma.tutor.update({
+        where: { userId: session.user.id },
+        data: {
+          subjects: {
+            set: [],
+            connect: subjects.map((id) => ({ id })),
+          },
+        },
+      });
+    }),
+
   // Convert a regular Profile into a TutorProfile. @admin
   create: adminProtectedProcedure
     .input(z.object({ profileId: z.string().cuid() }))
     .mutation(async ({ input, ctx }) => {
       return { input, ctx };
-    }),
-
-  submitApplication: protectedProcedure
-    .input(z.object({ data: schema, id: z.string().cuid() }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const { prisma, session } = ctx;
-        const { data, id } = input;
-
-        // session id has to match the profile id
-        const profile = await prisma.profile.findUnique({
-          where: { id },
-          include: { tutorProfile: true },
-        });
-        if (!profile || profile.userId !== session.user.id)
-          throw new Error("Not validated");
-
-        if (profile.tutorProfile !== null) throw new Error("Already exists");
-
-        // parse out location, education and experience properties
-        const {
-          school,
-          degree,
-          fieldOfStudy,
-          educationYearEnded,
-          educationYearStarted,
-          educationMonthEnded,
-          educationMonthStarted,
-          employmentTitle,
-          employmentType,
-          employmentYearEnded,
-          employmentMonthEnded,
-          employmentYearStarted,
-          employmentMonthStarted,
-          address,
-          address2,
-          city,
-          companyName,
-          state,
-          zip,
-          country,
-          ...rest
-        } = data;
-
-        await prisma.profile.update({
-          where: { id },
-          data: {
-            tutorProfile: {
-              create: {
-                status: "PENDING",
-                location: {
-                  create: {
-                    zip,
-                    city,
-                    state,
-                    address,
-                    address2,
-                    country,
-                  },
-                },
-                education: {
-                  create: {
-                    degree,
-                    school,
-                    fieldOfStudy,
-                    yearStarted: educationYearStarted,
-                    yearEnded: educationYearEnded || "",
-                    monthStarted: educationMonthStarted,
-                    monthEnded: educationMonthEnded || "",
-                  },
-                },
-                employment: {
-                  create: {
-                    companyName,
-                    monthEnded: employmentMonthEnded,
-                    monthStarted: employmentMonthStarted,
-                    yearEnded: employmentYearEnded,
-                    yearStarted: employmentYearStarted,
-                    type: employmentType,
-                    title: employmentTitle,
-                  },
-                },
-                ...rest,
-              },
-            },
-          },
-        });
-
-        return true;
-      } catch (error) {
-        console.error(error);
-        return false;
-      }
-    }),
-
-  // Update the logged in tutor's information. @self
-  update: protectedProcedure
-    .input(TutorData.partial())
-    .mutation(async ({ input, ctx }) => {
-      const { prisma, session } = ctx;
-      const { ...data } = input;
-
-      return prisma.tutor.update({
-        where: { profileId: session.user.id },
-        data,
-      });
     }),
 
   // Update a given tutor by ID. @admin

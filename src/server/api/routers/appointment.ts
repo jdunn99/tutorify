@@ -95,6 +95,18 @@ export const appointmentRouter = router({
         orderBy: {
           start: "asc",
         },
+        include: {
+          tutor: {
+            select: {
+              user: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
         take,
       });
     }),

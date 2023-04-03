@@ -1,14 +1,15 @@
-import Calendar from "@/components/calendar";
+import { Calendar } from "@/components/calendar";
 import {
   Dropdown,
   DropdownContent,
   DropdownItem,
   DropdownLabel,
 } from "@/components/dropdown";
+import { Spinner } from "@/components/loading";
 import { api } from "@/utils/api";
 import withAuthHOC, { WithSession } from "@/utils/auth";
 import { useDate, useDateRange } from "@/utils/hooks/useDate";
-import { Appointment } from "@prisma/client";
+import { Appointment, AppointmentStatus } from "@prisma/client";
 import Image from "next/image";
 import React from "react";
 import {
@@ -21,20 +22,36 @@ import { RxClock, RxDotsHorizontal } from "react-icons/rx";
 import { Heading, ProfileLayout } from ".";
 import { STATIC_RECENT_APPOINTMENTS } from "./dashboard";
 
-interface AppointmentDropdownProps {
-  appointment: AppointmentItemProps;
-  day: string;
-  startTime: string;
-  endTime: string;
+export function AppointmentDropdownHeader({
+  appointment,
+}: AppointmentDropdownProps) {
+  const { title, start, end } = appointment;
+  const { day, startTime, endTime } = useDateRange(start, end);
+
+  return (
+    <React.Fragment>
+      <p className="font-semibold text-slate-800 px-2">{title}</p>
+      <div className="px-2 space-y-1 text-sm text-slate-600">
+        <p className="flex items-center gap-1 ">
+          <MdCalendarMonth className="text-lg text-green-600" />
+          {day}
+        </p>
+        <p className="flex items-center gap-1 ">
+          <RxClock className="text-lg text-green-600" />
+          {startTime} - {endTime}
+        </p>
+      </div>
+    </React.Fragment>
+  );
 }
 
-function AppointmentDropdown({
-  appointment,
-  day,
-  startTime,
-  endTime,
-}: AppointmentDropdownProps) {
-  const { title, status, id } = appointment;
+interface AppointmentDropdownProps {
+  appointment: Appointment;
+}
+
+function AppointmentDropdown({ appointment }: AppointmentDropdownProps) {
+  const { title, status, id, start, end } = appointment;
+  const { day, startTime, endTime } = useDateRange(start, end);
 
   return (
     <Dropdown
@@ -43,32 +60,22 @@ function AppointmentDropdown({
       variant="ghostColored"
     >
       <DropdownContent>
-        <DropdownLabel>{title}</DropdownLabel>
-        <div className="px-2 space-y-1 text-sm text-slate-600 pb-4 border-b border-slate-100">
-          <p className="flex items-center gap-1 ">
-            <MdCalendarMonth className="text-lg text-green-600" />
-            {day}
-          </p>
-          <p className="flex items-center gap-1 ">
-            <RxClock className="text-lg text-green-600" />
-            {startTime} - {endTime}
-          </p>
-        </div>
-        <AppointmentActions past={status === "COMPLETED"} id={id} />
+        <AppointmentDropdownHeader appointment={appointment} />
+        <AppointmentActions status={status} id={id} />
       </DropdownContent>
     </Dropdown>
   );
 }
 
 interface AppointmentActionsProps {
-  past: boolean;
+  status: AppointmentStatus;
   id: string;
 }
-function AppointmentActions({ past, id }: AppointmentActionsProps) {
+export function AppointmentActions({ id, status }: AppointmentActionsProps) {
   return (
     <React.Fragment>
       <DropdownLabel>Actions</DropdownLabel>
-      {past && (
+      {status === "COMPLETED" && (
         <DropdownItem icon={<MdOutlineReviews />}>Add Review</DropdownItem>
       )}
       <DropdownItem icon={<MdOutlineEdit />}>Edit Appointment</DropdownItem>
@@ -94,7 +101,7 @@ export function AppointmentItem(appointment: AppointmentItemProps) {
   } = tutor;
 
   return (
-    <div className="bg-white flex flex-wrap items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-0.5 hover:shadow-lg duration-200">
+    <div className="bg-white flex flex-wrap items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-1 hover:shadow-lg duration-200">
       <div className="flex items-center gap-6">
         <Image
           alt="Profile Image"
@@ -104,7 +111,7 @@ export function AppointmentItem(appointment: AppointmentItemProps) {
           width={64}
         />
 
-        <div className="space-y-1 py-2">
+        <div className="space-y-1">
           <h4 className="text-sm font-medium text-green-600">{name}</h4>
           <p className="text-xl text-slate-800 font-bold">{title}</p>
           <p className="text-xs text-slate-400">{description}</p>
@@ -129,29 +136,39 @@ export function AppointmentItem(appointment: AppointmentItemProps) {
 }
 
 function Appointments({ session }: WithSession) {
-  const { data: appointments } =
-    api.appointment.getRecentCompletedAppointments.useQuery();
-  const { data: countForMonth } = api.appointment.getCountForMonth.useQuery();
-  
+  const [date, setDate] = React.useState<string>("");
+  const { data: appointments, isLoading } =
+    api.appointment.getAppointmentsForDay.useQuery(
+      { date },
+      { enabled: date.length > 0 }
+    );
 
   return (
     <ProfileLayout session={session}>
-      <Heading>Appointments</Heading>
-      <div className="flex items-start gap-4">
-        <div className=" space-y-2">
-          {appointments?.map((item) => (
-            <AppointmentItem {...(item as AppointmentItemProps)} key={item.id} />
-          ))}
+      <Heading>
+        {date.length > 0 ? `Appointments - ${date}` : "Appointments"}
+      </Heading>
+      <div className="flex items-center justify-center gap-8 flex-col-reverse sm:flex-row">
+        {appointments ? (
+          <div className="space-y-2 max-h-[calc(100vh-250px)] flex-1 overflow-y-auto">
+            {appointments.map((item) => (
+              <AppointmentItem
+                {...(item as AppointmentItemProps)}
+                key={item.id}
+              />
+            ))}
+          </div>
+        ) : isLoading && date.length > 0 ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Spinner />{" "}
+          </div>
+        ) : null}
+        <div className="p-4 flex-1">
+          <Calendar
+            controls={typeof appointments === "undefined" && date.length === 0}
+            onClick={setDate}
+          />
         </div>
-        <Calendar
-          month={3}
-          year={2023}
-          events={
-            typeof countForMonth !== "undefined"
-              ? (countForMonth.appointments as Record<string, number>)
-              : {}
-          }
-        />
       </div>
     </ProfileLayout>
   );

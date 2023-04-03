@@ -14,7 +14,7 @@ export const DROPDOWN_VARIANTS = {
   base: "p-2 relative rounded hover:bg-green-100 select-none text-slate-600 hover:text-slate-800 hover:font-semibold  text-sm outline-none cursor-pointer duration-100",
 };
 export const DROPDOWN_CONTENT_VARIANTS = {
-  base: "DropdownMenuContent relative min-w-[220px] z-10 bg-white rounded-lg p-2 shadow-lg border border-green-600",
+  base: "DropdownMenuContent relative min-w-[220px]  bg-white rounded-lg p-2 shadow-lg border border-green-600",
 };
 
 export const DROPDOWN_LABEL_VARIANTS = {
@@ -37,7 +37,11 @@ export const DropdownItem = React.forwardRef<
       ref={ref}
       {...rest}
     >
-      <div className="flex gap-2 items-center">
+      <div
+        className={`flex gap-2 ${
+          typeof icon !== "undefined" ? "items-center" : "flex-col"
+        }`}
+      >
         {typeof icon !== "undefined" ? (
           <span className="inline-block text-green-600 text-lg">{icon}</span>
         ) : null}

@@ -1,6 +1,6 @@
 import { Banner } from "@/components/banner";
 import { Button } from "@/components/button";
-import Calendar from "@/components/calendar";
+import { Calendar } from "@/components/calendar";
 import { NavLink } from "@/components/links";
 import { Spinner } from "@/components/loading";
 import { ProfileNavbar } from "@/components/navbar";
@@ -74,8 +74,7 @@ function RecentAppointments() {
     <div className="space-y-4 flex-1">
       <Heading
         link={{ href: "/profile/appointments", text: "All appointments" }}
-      >
-      </Heading>
+      ></Heading>
       {recentAppointments &&
         recentAppointments.map((item) => (
           <AppointmentItem {...(item as any)} key={item.id} />
@@ -127,20 +126,11 @@ function RecentTutors() {
 }
 
 function Cal() {
-  const { data: countForMonth } = api.appointment.getCountForMonth.useQuery();
 
   return (
     <div className="space-y-4">
       <Heading>Calendar</Heading>
-      <Calendar
-        month={3}
-        year={2023}
-        events={
-          typeof countForMonth !== "undefined"
-            ? (countForMonth.appointments as Record<string, number>)
-            : {}
-        }
-      />
+      <Calendar dropdown controls/>
     </div>
   );
 }

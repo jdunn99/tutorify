@@ -5,6 +5,7 @@ import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import React from "react";
 import {
   MdCalendarMonth,
   MdDashboard,
@@ -28,7 +29,13 @@ import { NavLink } from "./links";
 function NotificationsMenu() {
   return (
     <Dropdown
-      heading={<IconBadge variant="danger" size="icon_dot" icon={<MdNotifications />} />}
+      heading={
+        <IconBadge
+          variant="danger"
+          size="icon_dot"
+          icon={<MdNotifications />}
+        />
+      }
       variant="ghostColored"
     >
       <DropdownContent align="start" alignOffset={5} className="max-w-xs">
@@ -125,20 +132,20 @@ export function AvatarMenu({ session }: WithSession) {
       <DropdownContent align="start" sideOffset={4}>
         <DropdownLabel>{session.user.name}</DropdownLabel>
         {AVATAR_MENU_ITEMS.map(({ text, icon, href }, index) => (
-          <DropdownItem className="cursor-pointer hover:underline" key={index} icon={icon}>
-            <Link href={href} >
-              {text}
-            </Link>
+          <DropdownItem
+            className="cursor-pointer hover:underline"
+            key={index}
+            icon={icon}
+          >
+            <Link href={href}>{text}</Link>
           </DropdownItem>
         ))}
 
         <DropdownItem
           className="cursor-pointer hover:underline"
+          icon={<MdLogout />}
           onClick={() => void signOut({ callbackUrl: "/" })}
         >
-          <span className="inline-block text-green-600 text-lg">
-            <MdLogout />
-          </span>
           Logout
         </DropdownItem>
       </DropdownContent>
@@ -178,7 +185,13 @@ function Authenticated({ session }: WithSession) {
   }
 
   return shouldRender ? (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4">
+      <NavLink href={`/tutor/${session.user.id}`}>Profile</NavLink>
+      <NavLink href="/profile/dashboard">Dashboard</NavLink>
+      <NavLink href="/profile/appointments">Appointments</NavLink>
+      <NavLink href="/profile/messages">
+        <MdMessage className="text-lg" />
+      </NavLink>
       <NotificationsMenu />
       <AvatarMenu session={session} />
     </div>
@@ -198,15 +211,17 @@ export function Navbar() {
             </Link>
           </div>
           <div className="flex items-center gap-4 md:gap-8">
-            <div className="hidden md:flex md:gap-4">
-              <NavLink href="/#subjects">Subjects</NavLink>
-              <NavLink href="/#services">Services</NavLink>
-              <NavLink href="/about_us">About Us</NavLink>
-            </div>
             {typeof session !== "undefined" && session !== null ? (
               <Authenticated session={session} />
             ) : (
-              <Unauthenticated />
+              <React.Fragment>
+                <Unauthenticated />
+                <div className="hidden md:flex md:gap-4">
+                  <NavLink href="/#subjects">Subjects</NavLink>
+                  <NavLink href="/#services">Services</NavLink>
+                  <NavLink href="/about_us">About Us</NavLink>
+                </div>
+              </React.Fragment>
             )}
           </div>
         </nav>

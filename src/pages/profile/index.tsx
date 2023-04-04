@@ -30,8 +30,9 @@ export function Heading({ link, children }: HeadingProps) {
 
 export function ProfileLayout({
   children,
+  padding=true,
   session,
-}: { children?: React.ReactNode } & WithSession) {
+}: { children?: React.ReactNode; padding?: boolean } & WithSession) {
   const router = useRouter();
 
   const heading = React.useMemo(() => {
@@ -41,6 +42,10 @@ export function ProfileLayout({
     return route.charAt(0).toUpperCase() + route.slice(1);
   }, [router.pathname]);
 
+  const className = padding
+    ? "px-8 py-12 max-w-7xl mx-auto space-y-8"
+    : "";
+
   return (
     <div className="flex">
       <Sidebar pathname={router.pathname} />
@@ -48,7 +53,7 @@ export function ProfileLayout({
         <ProfileNavbar session={session} route={heading} />{" "}
         <div className="h-[calc(100vh-73px)] overflow-y-hidden bg-slate-50">
           <div className="h-full overflow-y-auto ">
-            <section className="px-8 py-12 max-w-7xl mx-auto space-y-8">
+            <section className={className}>
               {children}
               <Footer />
             </section>

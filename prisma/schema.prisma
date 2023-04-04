@@ -25,6 +25,7 @@ model User {
     updatedAt     DateTime      @updatedAt
     tutorProfile  Tutor?
     appointments  Appointment[]
+    messages       Message[]
 }
 
 model Account {
@@ -85,6 +86,7 @@ model Tutor {
     updatedAt             DateTime          @updatedAt
     resume                String?
     applicationStatus     ApplicationStatus @default(welcome)
+    messages               Message[]
 }
 
 model Education {
@@ -166,6 +168,20 @@ model Appointment {
     @@index([subjectId])
 }
 
+model Message {
+    id        String        @id @default(cuid())
+    student   User          @relation(fields: [studentId], references: [id])
+    studentId String
+    tutor     Tutor         @relation(fields: [tutorId], references: [id])
+    tutorId   String
+    createdAt DateTime      @default(now())
+    message   String        @db.Text
+    sentBy    MessageSentBy
+
+    @@index([studentId])
+    @@index([tutorId])
+}
+
 model VerificationToken {
     identifier String
     token      String   @unique
@@ -213,4 +229,9 @@ enum ApplicationStatus {
     basic_info
     profile
     submitted
+}
+
+enum MessageSentBy {
+    TUTOR
+    STUDENT
 }

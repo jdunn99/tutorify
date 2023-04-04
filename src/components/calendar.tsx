@@ -24,12 +24,6 @@ import {
 } from "./dropdown";
 import { Spinner } from "./loading";
 
-interface CalendarProps {
-  month: number;
-  year: number;
-  events: Record<string, number>;
-}
-
 const days = [
   "Monday",
   "Tuesday",
@@ -57,10 +51,10 @@ const months = [
 
 const relevantYears = [2023, 2024];
 
-interface CalendarDropdownProps {
+interface CalendarDropdownItemProps {
   date: string;
 }
-function CalendarDropdownItems({ date }: CalendarDropdownProps) {
+function CalendarDropdownItems({ date }: CalendarDropdownItemProps) {
   const { data: appointments } = api.appointment.getAppointmentsForDay.useQuery(
     {
       date,
@@ -141,26 +135,316 @@ function ControlDropdown({
   );
 }
 
-const CALENDAR_ITEM_STYLE = "text-xs flex border border-slate-200 flex-1";
-
-interface SmallCalendarProps {
-  onClick?: React.Dispatch<React.SetStateAction<string>>;
-  controls?: boolean;
-  dropdown?: boolean;
+interface CalendarHeaderProps {
+  month: number;
+  onMonthChange(newMonth: number): void;
+  year: number;
+  onYearChange(newYear: number): void;
+  controls: Boolean;
 }
-export function Calendar({ onClick, controls, dropdown }: SmallCalendarProps) {
-  const { month, onMonthChange, slots, year, onYearChange } = useCalendar();
-  const { data: countForMonth } = api.appointment.getCountForMonth.useQuery();
-
-  const events = React.useMemo(
-    () => countForMonth?.appointments || {},
-    [countForMonth]
-  );
-
+function CalendarHeader({
+  month,
+  onMonthChange,
+  year,
+  onYearChange,
+  controls,
+}: CalendarHeaderProps) {
   function handleMonthChange(newMonth: number) {
     if (newMonth < 0) onMonthChange(11);
     else onMonthChange(newMonth);
   }
+
+  return controls ? (
+    <div className="flex items-center px-8 py-4 bg-green-200  justify-between">
+      <h2 className="text-green-800 font-bold">
+        {months[month - 1]} {year}
+      </h2>
+      <div className="flex items-center gap-4">
+        <ControlDropdown
+          heading={months[month - 1]}
+          onClick={onMonthChange}
+          data={months}
+        />
+        <ControlDropdown
+          heading={year}
+          onClick={onYearChange}
+          data={relevantYears}
+        />
+      </div>
+    </div>
+  ) : (
+    <div className="flex items-center px-8 py-4 justify-center">
+      <Button
+        onClick={() => handleMonthChange(month - 2)}
+        variant="ghost"
+        size="xl"
+      >
+        <MdChevronLeft />
+      </Button>
+      <div className="flex items-center gap-4">
+        <ControlDropdown
+          heading={months[month - 1]}
+          onClick={onMonthChange}
+          data={months}
+          variant="ghost"
+        />
+      </div>
+      <Button
+        variant="ghost"
+        size="xl"
+        onClick={() => handleMonthChange(month % 12)}
+      >
+        <MdChevronRight />
+      </Button>
+    </div>
+  );
+}
+
+interface CalendarDayProps {
+  day: string;
+  controls: boolean;
+}
+function CalendarDay({ day, controls }: CalendarDayProps) {
+  return (
+    <div
+      className={`text-xs py-4 text-center bg-green-200 ${
+        controls
+          ? "border-l border-r"
+          : "first:rounded-tl-lg  last:rounded-tl-lg"
+      } font-semibold text-slate-800`}
+    >
+      {controls ? day : day.charAt(0)}
+    </div>
+  );
+}
+
+interface CalendarDropdownProps {
+  heading: string;
+  label: string;
+  count: number;
+  formattedDate: string;
+}
+function CalendarDropdown({
+  heading,
+  label,
+  count,
+  formattedDate,
+}: CalendarDropdownProps) {
+  return (
+    <Dropdown
+      heading={heading}
+      className="w-6 h-6 text-xs font-bold !text-white !border-none !rounded-full flex justify-center items-center"
+      variant="base"
+      size="xs"
+    >
+      <DropdownContent sideOffset={4} align="center" className="!p-0">
+        <div className="flex pl-2 pr-8 items-center justify-between border-b bg-green-200 rounded-t-lg">
+          <DropdownLabel>{label}</DropdownLabel>
+          <span className="text-green-500 text-xs font-bold">{count}</span>
+        </div>
+
+        <div className="max-h-[30vh] overflow-y-auto px-2 space-y-4 rounded-b-lg">
+          <CalendarDropdownItems date={formattedDate} />
+        </div>
+      </DropdownContent>
+    </Dropdown>
+  );
+}
+
+interface CalendarSlotWithEventsProps {
+  slot: Date;
+  onEventClick?(date: string): void;
+  events: Record<string, number>;
+  controls: boolean;
+  dropdown: boolean;
+}
+function CalendarSlotWithEvents({
+  slot,
+  onEventClick,
+  events,
+  controls,
+  dropdown,
+}: CalendarSlotWithEventsProps) {
+  const date = React.useMemo(() => slot.getDate(), [slot]);
+  const formattedDate = React.useMemo(
+    () => slot.toISOString().substring(0, 10),
+    [slot]
+  );
+  const label = React.useMemo(
+    () =>
+      slot.toLocaleDateString("default", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric",
+      }),
+    [slot]
+  );
+
+  return (
+    <React.Fragment>
+      {dropdown ? (
+        <CalendarDropdown
+          formattedDate={formattedDate}
+          heading={date.toString()}
+          count={events[formattedDate]}
+          label={label}
+        />
+      ) : (
+        <Button
+          className="w-6 h-6 text-xs font-bold !text-white !border-none !rounded-full flex justify-center items-center"
+          size="xs"
+          onClick={() => onEventClick && onEventClick(formattedDate)}
+        >
+          {date}
+        </Button>
+      )}
+
+      {controls && (
+        <p className="text-sm text-slate-600 font-medium">
+          {events[formattedDate]} events
+        </p>
+      )}
+    </React.Fragment>
+  );
+}
+
+interface CalendarSlotNoEventsProps {
+  slot: Date;
+  onDateClick?(date: Date): void;
+  activeDate?: Date;
+}
+function CalendarSlotNoEvents({
+  slot,
+  onDateClick,
+  activeDate = new Date(),
+}: CalendarSlotNoEventsProps) {
+  const sameDay = React.useCallback(
+    (comp: Date) => {
+      return (
+        comp.getFullYear() === slot.getFullYear() &&
+        comp.getMonth() === slot.getMonth() &&
+        comp.getDate() === slot.getDate()
+      );
+    },
+    [slot]
+  );
+  const date = React.useMemo(() => slot.getDate(), [slot]);
+
+  const variant = sameDay(activeDate)
+    ? "base"
+    : sameDay(new Date())
+    ? "secondary"
+    : "ghostColored";
+
+  return (
+    <Button
+      variant={variant}
+      className={`w-6 h-6 text-xs font-bold !border-none !rounded-full flex justify-center items-center`}
+      size="xs"
+      onClick={() => onDateClick && onDateClick(slot)}
+    >
+      {date}
+    </Button>
+  );
+}
+
+interface CalendarSlotProps {
+  slot: Date;
+  isFirst: boolean;
+  isLast: boolean;
+  events?: Record<string, number>;
+  dropdown: boolean;
+  controls: boolean;
+  onEventClick?(date: string): void;
+  onDateClick?(date: Date): void;
+  activeDate?: Date;
+  month: number;
+}
+function CalendarSlot({
+  month,
+  slot,
+  isFirst,
+  isLast,
+  events,
+  dropdown,
+  controls,
+  onEventClick,
+  onDateClick,
+  activeDate,
+}: CalendarSlotProps) {
+  const isCurrentMonth = slot.getMonth() === month - 1;
+  const date = React.useMemo(() => slot.getDate(), [slot]);
+  const formattedDate = React.useMemo(
+    () => slot.toISOString().substring(0, 10),
+    [slot]
+  );
+
+  let cx = CALENDAR_ITEM_STYLE;
+  cx += controls
+    ? " aspect-[1.55] p-2 justify-between "
+    : " aspect-[1.25] items-center justify-center ";
+  if (isFirst) cx += " rounded-bl-lg ";
+  if (isLast) cx += " rounded-br-lg ";
+
+  if (!isCurrentMonth)
+    return <div className={`${cx} bg-slate-100 text-slate-400`}>{date}</div>;
+
+  cx += " bg-white";
+
+  return (
+    <div className={cx}>
+      {typeof events !== "undefined" ? (
+        events[formattedDate] ? (
+          <CalendarSlotWithEvents
+            slot={slot}
+            onEventClick={onEventClick}
+            events={events}
+            controls={controls}
+            dropdown={dropdown}
+          />
+        ) : (
+          date
+        )
+      ) : (
+        <CalendarSlotNoEvents
+          activeDate={activeDate}
+          slot={slot}
+          onDateClick={onDateClick}
+        />
+      )}
+    </div>
+  );
+}
+
+const CALENDAR_ITEM_STYLE =
+  "text-xs flex border border-slate-200 flex-1 font-semibold";
+
+interface CalendarProps {
+  controls?: boolean;
+  dropdown?: boolean;
+  onEventClick?(date: string): void;
+  onDateClick?(date: Date): void;
+  hasEvents?: boolean;
+  activeDate?: Date;
+}
+export function Calendar({
+  controls = false,
+  hasEvents = true,
+  dropdown,
+  onEventClick,
+  onDateClick,
+  activeDate,
+}: CalendarProps) {
+  const { month, onMonthChange, slots, year, onYearChange } = useCalendar();
+  const { data: countForMonth } = api.appointment.getCountForMonth.useQuery(
+    undefined,
+    { enabled: hasEvents }
+  );
+
+  const events = React.useMemo(
+    () => countForMonth?.appointments,
+    [countForMonth]
+  );
 
   return (
     <div
@@ -170,145 +454,36 @@ export function Calendar({ onClick, controls, dropdown }: SmallCalendarProps) {
           : "flex flex-col"
       }`}
     >
-      {controls ? (
-        <div className="flex items-center px-8 py-4 bg-green-200  justify-between">
-          <h2 className="text-green-800 font-bold">
-            {months[month - 1]} {year}
-          </h2>
-          <div className="flex items-center gap-4">
-            <ControlDropdown
-              heading={months[month - 1]}
-              onClick={onMonthChange}
-              data={months}
-            />
-            <ControlDropdown
-              heading={year}
-              onClick={onYearChange}
-              data={relevantYears}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center px-8 py-4 justify-center">
-          <Button
-            onClick={() => handleMonthChange(month - 2)}
-            variant="ghostColored"
-            size="xl"
-          >
-            <MdChevronLeft />
-          </Button>
-          <div className="flex items-center gap-4">
-            <ControlDropdown
-              heading={months[month - 1]}
-              onClick={onMonthChange}
-              data={months}
-              variant="ghost"
-            />
-          </div>
-          <Button
-            variant="ghostColored"
-            size="xl"
-            onClick={() => handleMonthChange(month % 12)}
-          >
-            <MdChevronRight />
-          </Button>
-        </div>
-      )}
-      <div className="grid grid-cols-7 flex-1 overflow-hidden h-full">
+      <CalendarHeader
+        month={month}
+        onMonthChange={onMonthChange}
+        onYearChange={onYearChange}
+        controls={controls}
+        year={year}
+      />
+      <div
+        className={`grid grid-cols-7 flex-1 overflow-hidden h-full ${
+          !controls && "shadow-xl rounded-lg border"
+        }`}
+      >
         {days.map((day) => (
-          <div
-            key={day}
-            className={`text-xs py-4 text-center ${
-              controls
-                ? "border-l borer-r first:border-l-0 last:border-r-0"
-                : ""
-            } font-semibold text-slate-800`}
-          >
-            {controls ? day : day.charAt(0)}
-          </div>
+          <CalendarDay day={day} key={day} controls={controls} />
         ))}
-        {slots.map((slot, index) => {
-          const isCurrentMonth = slot.getMonth() === month - 1;
-          const date = slot.getDate();
-
-          let cx = CALENDAR_ITEM_STYLE;
-          cx += controls
-            ? " aspect-[1.55] p-2 justify-between "
-            : " aspect-[1.25] items-center justify-center ";
-          if (index === 0 && !controls) cx += " rounded-tl-lg ";
-          if (index === 6 && !controls) cx += " rounded-tr-lg ";
-          if (index === slots.length - 7) cx += " rounded-bl-lg ";
-          if (index === slots.length - 1) cx += " rounded-br-lg ";
-
-          if (!isCurrentMonth)
-            return (
-              <div
-                key={slot.toDateString()}
-                className={`${cx} bg-slate-100 text-slate-400`}
-              >
-                {date}
-              </div>
-            );
-
-          cx += " bg-white";
-          const formattedDate = slot.toISOString().substring(0, 10);
-
-          return (
-            <div key={slot.toDateString()} className={cx}>
-              {events[formattedDate] ? (
-                <React.Fragment>
-                  {dropdown ? (
-                    <Dropdown
-                      heading={slot.getDate()}
-                      className="w-6 h-6 text-xs font-bold !text-white !border-none !rounded-full flex justify-center items-center"
-                      variant="base"
-                      size="xs"
-                    >
-                      <DropdownContent
-                        sideOffset={4}
-                        align="center"
-                        className="!p-0"
-                      >
-                        <div className="flex pl-2 pr-8 items-center justify-between border-b bg-green-200 rounded-t-lg">
-                          <DropdownLabel>
-                            {slot.toLocaleDateString("default", {
-                              month: "long",
-                              day: "2-digit",
-                              year: "numeric",
-                            })}
-                          </DropdownLabel>
-                          <span className="text-green-500 text-xs font-bold">
-                            {events[formattedDate]}
-                          </span>
-                        </div>
-
-                        <div className="max-h-[30vh] overflow-y-auto px-2 space-y-4 rounded-b-lg">
-                          <CalendarDropdownItems date={formattedDate} />
-                        </div>
-                      </DropdownContent>
-                    </Dropdown>
-                  ) : (
-                    <Button
-                      className="w-6 h-6 text-xs font-bold !text-white !border-none !rounded-full flex justify-center items-center"
-                      size="xs"
-                      onClick={() => onClick && onClick(formattedDate)}
-                    >
-                      {date}
-                    </Button>
-                  )}
-
-                  {controls && (
-                    <p className="text-sm text-slate-600 font-medium">
-                      {events[formattedDate]} events
-                    </p>
-                  )}
-                </React.Fragment>
-              ) : (
-                date
-              )}
-            </div>
-          );
-        })}
+        {slots.map((slot, index) => (
+          <CalendarSlot
+            slot={slot}
+            key={index}
+            month={month}
+            onEventClick={onEventClick}
+            onDateClick={onDateClick}
+            activeDate={activeDate}
+            controls={controls}
+            isFirst={index === slots.length - 7}
+            isLast={index === slots.length - 1}
+            events={events}
+            dropdown={dropdown || false}
+          />
+        ))}
       </div>
     </div>
   );

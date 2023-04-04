@@ -3,7 +3,7 @@ import React from "react";
 export const relevantYears = [2023, 2024];
 export function useCalendar() {
   const today = new Date();
-  const [month, setMonth] = React.useState<number>(3);
+  const [month, setMonth] = React.useState<number>(today.getMonth() + 1);
   const [year, setYear] = React.useState<number>(today.getFullYear());
 
   function onMonthChange(newMonth: number) {

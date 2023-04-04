@@ -2,10 +2,11 @@ import React from "react";
 
 export const BUTTON_VARIANTS = {
   base: "text-white border border-green-200 bg-green-500 hover:bg-green-700 shadow-sm disabled:bg-green-200",
+  secondary: "text-green-600 border border-green-200 bg-green-200 hover:bg-green-400 shadow-sm disabled:bg-green-200",
   open: "text-green-600 border-green-400 border bg-white hover:bg-green-50 shadow-sm disabled:bg-gray-50 disabled:text-gray-300 disabled:border-gray-300",
   white: "text-slate-800 border-slate-400 border bg-white hover:bg-slate-50 shadow-sm disabled:bg-gray-50 disabled:text-gray-300 disabled:border-gray-300",
   ghost: "text-gray-600 hover:text-gray-600/30 bg-transparent",
-  ghostColored: "text-gray-600 hover:text-green-600 bg-transparent",
+  ghostColored: "text-gray-600 hover:text-green-600 bg-transparent hover:bg-green-200",
   warning: "text-slate-800 bg-yellow-400 hover:bg-yellow-500 border border-yellow-500",
   danger: "text-white bg-red-700 hover:bg-red-800 border border-red-600",
 };

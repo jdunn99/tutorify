@@ -179,67 +179,15 @@ export const tutorRouter = router({
       return result;
     }),
 
-  getApplicationProgress: protectedProcedure.query(async ({ ctx }) => {
-    const { prisma, session } = ctx;
-    const { user } = session;
+  getProfile: publicProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const { prisma } = ctx;
+      const { id } = input;
 
-    return await prisma.tutor.findUnique({
-      where: { userId: user.id },
-      select: { applicationStatus: true },
-    });
-  }),
-
-  updateApplication: protectedProcedure
-    .input(
-      z.object({
-        applicationStatus: z.nativeEnum(ApplicationStatus),
-        subjects: z.string().cuid().array().min(1).max(5).optional(),
-        basicInfo: BasicInfo.optional(),
-        profile: Profile.optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { applicationStatus, subjects, basicInfo, profile } = input;
-      const { prisma, session } = ctx;
-      const { user } = session;
-
-      const { location, ...rest } = basicInfo || {};
-      const { employment, education, ...profileData } = profile || {};
-
-      return await prisma.tutor.update({
-        where: { userId: user.id },
-        data: {
-          applicationStatus,
-          subjects:
-            typeof subjects !== "undefined"
-              ? {
-                  set: [],
-                  connect: subjects.map((id) => ({ id })),
-                }
-              : undefined,
-          location:
-            typeof location !== "undefined"
-              ? {
-                  create: location,
-                }
-              : undefined,
-
-          education:
-            typeof education !== "undefined"
-              ? {
-                  create: education,
-                }
-              : undefined,
-          employment:
-            typeof employment !== "undefined"
-              ? {
-                  create: employment,
-                }
-              : undefined,
-
-          ...rest,
-          ...profileData,
-        },
+      return await prisma.tutor.findUnique({
+        where: { id },
+        include: { user: true },
       });
     }),
 

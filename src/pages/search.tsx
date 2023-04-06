@@ -1,9 +1,10 @@
-import { Button } from "@/components/button";
+import { Button, ButtonLink } from "@/components/button";
 import { Dropdown, DropdownContent, DropdownItem } from "@/components/dropdown";
 import { Footer } from "@/components/footer";
 import { Spinner } from "@/components/loading";
 import { Navbar } from "@/components/navbar";
 import { Search } from "@/components/search";
+import { TutorCard } from "@/components/tutorCard";
 import { api } from "@/utils/api";
 import { GetServerSidePropsContext } from "next";
 import Image from "next/image";
@@ -129,44 +130,6 @@ const STATIC_DATA = [
   },
 ];
 
-function TutorCard(tutor: TutorCardProps) {
-  return (
-    <div
-      className="flex items-center justify-between gap-4 bg-white rounded-lg shadow p-4"
-      key={tutor.id}
-    >
-      <Image
-        alt="Profile Image"
-        className="rounded-full flex self-start"
-        src="https://randomuser.me/api/portraits/men/6.jpg"
-        height={64}
-        width={64}
-      />
-      <div className="flex-1 space-y-2">
-        <h2 className="text-xl font-semibold text-green-600">
-          {tutor.profile.name}
-        </h2>
-        <p>{tutor._count.appointments} sessions taught</p>
-        <p className="text-sm text-slate-600">
-          {tutor.profile.biography} Lorem ipsum dolor sit amet, consectetur
-          adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-          magna aliqua. Ut enim ad minim veniam
-        </p>
-      </div>
-      <div className="flex-[0.5] space-y-2">
-        <h4>
-          <span className="font-bold text-2xl">${tutor.hourlyRate}</span>
-          /hour.
-        </h4>
-        <div className="flex gap-2 ">
-          <Button>Book Now</Button>
-          <Button variant="open">Profile</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface SortMenuProps {
   onClick(name: string): void;
   active: string;
@@ -192,7 +155,6 @@ export default function SearchPage() {
   const router = useRouter();
   const { query: searchQuery } = router;
   const { query } = searchQuery || "";
-  const [active, setActive] = React.useState<string>("Suggested");
 
   const { data: searchResult, isLoading } = api.tutor.getByQuery.useQuery(
     {
@@ -206,12 +168,12 @@ export default function SearchPage() {
       <div className="flex  h-full overflow-y-auto flex-col">
         <Navbar />
         <main>
-          <section className="mx-auto items-start flex  max-w-3xl px-4 sm:px-6 lg:px-8 py-24 gap-8">
+          <section className="mx-auto items-start flex  max-w-3xl px-4 sm:px-6 lg:px-8 py-12 gap-8">
             <div className="flex-1">
               <span className="text-sm font-semibold ">Subject</span>
               <Search />
 
-              {isLoading ? (
+              {isLoading && typeof query === "string" && query.length > 2 ? (
                 <div className="grid place-items-center p-8">
                   <Spinner />
                 </div>
@@ -224,18 +186,18 @@ export default function SearchPage() {
                       <span className="text-green-600">{query}</span>{" "}
                       {searchResult.length === 1 ? "tutor" : "tutors"} found.
                     </h2>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-600">
-                        Sort:{" "}
-                      </p>
-                      <SortMenu active={active} onClick={setActive} />
-                    </div>
                   </div>
 
                   <div className="space-y-4">
-                    {STATIC_DATA.map((tutor) => (
-                      <TutorCard {...tutor} key={tutor.id} />
-                    ))}
+                    {searchResult.map((tutor) =>
+                      typeof tutor !== "undefined" ? (
+                        <TutorCard
+                          {...tutor}
+                          key={tutor.id}
+                          subject={query.toString()}
+                        />
+                      ) : null
+                    )}
                   </div>
                 </div>
               ) : null}

@@ -106,6 +106,7 @@ export type FormFieldTypes =
   | "email"
   | "password"
   | "number"
+  | "date"
   | "checkbox";
 
 /**

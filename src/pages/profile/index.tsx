@@ -17,7 +17,7 @@ interface HeadingProps {
 
 export function Heading({ link, children }: HeadingProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between flex-1">
       <h3 className="text-slate-700 m-0 text-xl font-semibold">{children}</h3>
       {link && (
         <NavLink href={link.href} variant="green">

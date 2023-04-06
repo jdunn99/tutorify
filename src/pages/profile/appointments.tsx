@@ -8,7 +8,7 @@ import {
 import { Spinner } from "@/components/loading";
 import { api } from "@/utils/api";
 import withAuthHOC, { WithSession } from "@/utils/auth";
-import { useDate, useDateRange } from "@/utils/hooks/useDate";
+import { useDateRange } from "@/utils/hooks/useDate";
 import { Appointment, AppointmentStatus } from "@prisma/client";
 import Image from "next/image";
 import React from "react";
@@ -20,7 +20,6 @@ import {
 } from "react-icons/md";
 import { RxClock, RxDotsHorizontal } from "react-icons/rx";
 import { Heading, ProfileLayout } from ".";
-import { STATIC_RECENT_APPOINTMENTS } from "./dashboard";
 
 export function AppointmentDropdownHeader({
   appointment,
@@ -50,8 +49,7 @@ interface AppointmentDropdownProps {
 }
 
 function AppointmentDropdown({ appointment }: AppointmentDropdownProps) {
-  const { title, status, id, start, end } = appointment;
-  const { day, startTime, endTime } = useDateRange(start, end);
+  const { status, id } = appointment;
 
   return (
     <Dropdown
@@ -91,31 +89,60 @@ type AppointmentItemProps = Appointment & {
       image: string;
     };
   };
+  image?: boolean;
 };
 
 export function AppointmentItem(appointment: AppointmentItemProps) {
-  const { start, end, title, description, id, tutor } = appointment;
+  const { start, end, title, description, id, tutor, image } = appointment;
   const { day, startTime, endTime } = useDateRange(start, end);
   const {
     user: { name },
   } = tutor;
 
   return (
-    <div className="bg-white flex flex-wrap items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-1 hover:shadow-lg duration-200">
+    <React.Fragment>
       <div className="flex items-center gap-6">
-        <Image
-          alt="Profile Image"
-          className="rounded-lg flex"
-          src="https://randomuser.me/api/portraits/men/6.jpg"
-          height={64}
-          width={64}
-        />
+        {image ? (
+          <Image
+            alt="Profile Image"
+            className="rounded-lg flex"
+            src="https://randomuser.me/api/portraits/men/6.jpg"
+            height={64}
+            width={64}
+          />
+        ) : null}
 
-        <div className="space-y-1">
-          <h4 className="text-sm font-medium text-green-600">{name}</h4>
-          <p className="text-xl text-slate-800 font-bold">{title}</p>
-          <p className="text-xs text-slate-400">{description}</p>
-          <div className="flex gap-2 text-slate-600 font-medium">
+        <div>
+          {image ? (
+            <h4 className="text-sm font-medium text-green-600">{name}</h4>
+          ) : null}
+          <p
+            className="text-xl text-slate-800 font-bold"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {title}
+          </p>
+          {image ? (
+            <p
+              className="text-xs text-slate-400"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {description}
+            </p>
+          ) : null}
+          <div className="flex gap-2 text-slate-600 font-medium pt-1">
             <MdCalendarMonth className="text-green-500" />
             <p className="text-xs border-r border-slate-300 pr-2">{day}</p>
             <RxClock className="text-green-500" />
@@ -125,13 +152,8 @@ export function AppointmentItem(appointment: AppointmentItemProps) {
           </div>
         </div>
       </div>
-      <AppointmentDropdown
-        appointment={appointment}
-        endTime={endTime}
-        startTime={startTime}
-        day={day}
-      />
-    </div>
+      <AppointmentDropdown appointment={appointment} />
+    </React.Fragment>
   );
 }
 
@@ -152,10 +174,12 @@ function Appointments({ session }: WithSession) {
         {appointments ? (
           <div className="space-y-2 max-h-[calc(100vh-250px)] flex-1 overflow-y-auto">
             {appointments.map((item) => (
-              <AppointmentItem
-                {...(item as AppointmentItemProps)}
+              <div
                 key={item.id}
-              />
+                className="bg-white flex items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-1 hover:shadow-lg duration-200"
+              >
+                <AppointmentItem {...(item as AppointmentItemProps)} />
+              </div>
             ))}
           </div>
         ) : isLoading && date.length > 0 ? (
@@ -166,7 +190,7 @@ function Appointments({ session }: WithSession) {
         <div className="p-4 flex-1">
           <Calendar
             controls={typeof appointments === "undefined" && date.length === 0}
-            onClick={setDate}
+            onEventClick={setDate}
           />
         </div>
       </div>

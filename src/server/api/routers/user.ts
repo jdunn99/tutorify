@@ -4,6 +4,7 @@ import {
   adminProtectedProcedure,
   superUserProtectedProcedure,
   publicProcedure,
+  protectedProcedure,
 } from "@/server/api/trpc";
 import { Role } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -33,6 +34,52 @@ export const userRouter = router({
         where: { email: input.email },
       });
     }),
+
+  getMetricsForRegularUser: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma, session } = ctx;
+
+    const [upcomingAppointment, metrics] = await Promise.all([
+      prisma.appointment.findFirst({
+        where: {
+          status: "SCHEDULED",
+          start: {
+            gt: new Date(),
+          },
+          studentId: session.user.id,
+        },
+        orderBy: {
+          start: "asc",
+        },
+        include: {
+          tutor: {
+            select: {
+              user: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.$queryRaw<{ completed: number; booked: number }[]>`
+      SELECT
+        SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) AS completed,
+        CAST(COUNT(*) AS SIGNED) AS booked
+      FROM Appointment
+      WHERE studentId = ${session.user.id};
+    `,
+    ]);
+
+    if (!metrics) throw new Error();
+    const { completed, booked } = metrics[0];
+
+    return {
+      upcomingAppointment,
+      metrics: { completed, booked: parseInt(booked.toString()) },
+    };
+  }),
 
   register: publicProcedure
     .input(

@@ -43,6 +43,9 @@ module.exports = {
       backgroundSize: {
         landing: "120rem",
       },
+      gridTemplateRows: {
+        8: "repeat(8, minmax(0, 1fr))",
+      },
     },
   },
   plugins: [require("@tailwindcss/typography")],

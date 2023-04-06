@@ -1,5 +1,5 @@
 import { Badge } from "@/components/badge";
-import { Button } from "@/components/button";
+import { Button, ButtonLink } from "@/components/button";
 import { Calendar } from "@/components/calendar";
 import { Layout } from "@/components/layout";
 import { Navbar } from "@/components/navbar";
@@ -41,10 +41,12 @@ interface TutorHeadingProps {
   hourlyRate: number;
   state: string;
   country: string;
+  onClick(): void;
 }
 
-function TutorHeading({
+export function TutorHeading({
   image,
+  onClick,
   name,
   headline,
   sessionsCount,
@@ -86,7 +88,7 @@ function TutorHeading({
           /hour.
         </h4>
         <div className="flex gap-2">
-          <Button>Book Now</Button>
+          <Button onClick={onClick}>Book Now</Button>
         </div>
       </div>
     </div>
@@ -209,15 +211,41 @@ function ReviewSection() {
 function TutorProfile({
   session,
   profile,
+  id,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { location, employment, education, subjects, user, _count } = profile;
   const [date, setDate] = React.useState<Date>(new Date());
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  const { query } = useRouter();
+
+  const slots: string[] = [];
+
+  for (let i = 8; i <= 20; i++) {
+    const hour = i > 12 ? i - 12 : i;
+    const timeSlot = `${hour === 12 ? 12 : hour}:00 ${i < 12 ? "AM" : "PM"}`;
+    slots.push(timeSlot);
+  }
+
+  const [slot, setSlot] = React.useState<string>();
+
+  function onSlotClick(newSlot: string) {
+    if (session === null) return;
+    setSlot(newSlot);
+  }
+
+  function scroll() {
+    if (typeof window !== "undefined" && ref.current)
+      ref.current.scrollIntoView({ behavior: "smooth" });
+  }
 
   return (
     <Layout navbar={false}>
       <Navbar />
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
+        {JSON.stringify(query)}
         <TutorHeading
+          onClick={scroll}
           state={location!.state}
           name={user!.name!}
           country={location!.country}
@@ -231,13 +259,34 @@ function TutorProfile({
           subjects={subjects!}
           experience={employment!}
         />
-        <TutorContainer heading="Availability">
-          <Calendar
-            activeDate={date}
-            onDateClick={setDate}
-            hasEvents={false}
-          />
-        </TutorContainer>
+        <div ref={ref}>
+          <TutorContainer heading="Availability">
+            <div className="flex items-end gap-4">
+              <Calendar
+                activeDate={date}
+                onDateClick={setDate}
+                hasEvents={false}
+              />
+              <div className="flex flex-col gap-2">
+                {slots.map((timeSlot) => (
+                  <ButtonLink
+                    aria-disabled="true"
+                    variant="open"
+                    href={`/appointment?day=${date.toISOString().substring(0,10)}&time=${timeSlot}&tutorId=${id}`}
+                    key={timeSlot}
+                    className={`p-2 rounded-lg border ${session === null ? "pointer-events-none" : ""} ${
+                      slot === timeSlot
+                        ? "bg-green-200 text-green-600 font-semibold border-green-500 shadow-lg"
+                        : ""
+                    } cursor-pointer hover:border-green-500 shadow duration-100 hover:bg-green-200 hover:text-green-600 hover:font-semibold`}
+                  >
+                    {timeSlot}
+                  </ButtonLink>
+                ))}
+              </div>
+            </div>
+          </TutorContainer>
+        </div>
         <ReviewSection />
       </div>
     </Layout>
@@ -286,6 +335,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     props: {
       session,
       profile: result,
+      id,
     },
   };
 }

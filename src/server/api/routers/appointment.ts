@@ -73,6 +73,18 @@ export const appointmentRouter = router({
       orderBy: {
         start: "asc",
       },
+      include: {
+        tutor: {
+          select: {
+            user: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
     });
   }),
 
@@ -156,12 +168,13 @@ FROM (
     return result[0];
   }),
 
-  // Create a new Appointment. @admin
+  // Create a new Appointment
   create: protectedProcedure
     .input(AppointmentData)
     .mutation(async ({ input, ctx }) => {
       const { prisma, session } = ctx;
-      const { title, tutorId, price, status, start, end, subjectId } = input;
+      const { title, tutorId, price, start, end, subjectId, description } =
+        input;
 
       return await prisma.appointment.create({
         data: {
@@ -182,9 +195,9 @@ FROM (
             },
           },
           price,
-          status,
           start,
           end,
+          description,
         },
       });
     }),

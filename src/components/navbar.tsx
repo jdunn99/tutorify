@@ -186,7 +186,12 @@ function Authenticated({ session }: WithSession) {
 
   return shouldRender ? (
     <div className="flex items-center gap-4">
-      <NavLink href={`/tutor/${session.user.id}`}>Profile</NavLink>
+      {session.user.role === "VERIFIED_TUTOR" ? (
+        <NavLink href={`/tutor/${session.user.id}`}>Profile</NavLink>
+      ) : null}
+      {session.user.role === "USER" ? (
+        <NavLink href="/search">Find a Tutor</NavLink>
+      ) : null}
       <NavLink href="/profile/dashboard">Dashboard</NavLink>
       <NavLink href="/profile/appointments">Appointments</NavLink>
       <NavLink href="/profile/messages">

@@ -52,6 +52,18 @@
   animation-name: slideRightAndFade;
 }
 
+select::after {
+  content: "";
+  display: block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-top: -0.125em;
+  margin-right: -0.25em;
+  border-top: 0.375em solid currentColor;
+  border-right: 0.375em solid currentColor;
+  transform: rotate(45deg);
+}
+
 @keyframes slideDown {
   from {
     height: 0;

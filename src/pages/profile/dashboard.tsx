@@ -14,6 +14,7 @@ import { MdArrowRightAlt, MdCalendarMonth } from "react-icons/md";
 import { RxClock } from "react-icons/rx";
 import { Heading, ProfileLayout } from ".";
 import { AppointmentItem } from "./appointments";
+import { ConversationContent } from "./messages";
 
 export const STATIC_RECENT_APPOINTMENTS = [
   {
@@ -44,93 +45,141 @@ const STATIC_RECENT_TUTORS = [
   },
 ];
 
-function UpcomingAppointment() {
-  const { data: upcomingAppointment } =
-    api.appointment.getUpcomingAppointment.useQuery();
+function Metrics() {
+  const { data, isLoading } = api.user.getMetricsForRegularUser.useQuery();
 
   return (
     <div className="space-y-4">
-      <Heading
-        link={{ href: "/profile/appointments", text: "All appointments" }}
-      >
-        Upcoming Appointment
-      </Heading>
-      <p>{JSON.stringify(upcomingAppointment)}</p>
-      <p className="text-slate-600 text-sm">
-        No upcoming appointments. You can find tutors{" "}
-        <NavLink href="/search" variant="green">
-          here.
-        </NavLink>
-      </p>
-    </div>
-  );
-}
+      <Heading>Metrics</Heading>
+      {typeof data !== "undefined" ? (
+        <div className="grid grid-col-1 sm:grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="p-4 rounded-lg bg-white border space-y-2">
+            <h1 className="text-sm font-medium text-slate-800">
+              Upcoming Appointment
+            </h1>
 
-function RecentAppointments() {
-  const { data: recentAppointments } =
-    api.appointment.getRecentCompletedAppointments.useQuery({ take: 3 });
-
-  return (
-    <div className="space-y-4 flex-1">
-      <Heading
-        link={{ href: "/profile/appointments", text: "All appointments" }}
-      ></Heading>
-      {recentAppointments &&
-        recentAppointments.map((item) => (
-          <AppointmentItem {...(item as any)} key={item.id} />
-        ))}
-    </div>
-  );
-}
-
-function RecentTutors() {
-  return (
-    <div className="space-y-4 flex-1">
-      <Heading link={{ href: "/profile/messages", text: "All tutors" }}>
-        Recent Tutors
-      </Heading>
-      {STATIC_RECENT_TUTORS.map(({ name, message, day }, index) => (
-        <div
-          key={index}
-          className="bg-white flex items-center gap-4 p-4 shadow-md rounded-lg cursor-pointer hover:shadow-lg border-slate-200 border hover:border hover:border-green-400 duration-200"
-        >
-          <Image
-            alt="Profile Image"
-            className="rounded-lg flex self-start"
-            src="https://randomuser.me/api/portraits/men/6.jpg"
-            height={64}
-            width={64}
-          />
-          <div>
-            <div className="flex items-center flex-wrap justify-between">
-              <h4 className="text-slate-800 font-semibold text-lg">{name}</h4>
-              <p className="text-green-600 font-medium text-xs">{day}</p>
+            <div className="flex justify-between items-center">
+              <AppointmentItem {...(data.upcomingAppointment as any)} />
             </div>
-            <p
-              className="text-slate-500 block font-medium text-xs"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {message}
-            </p>
+          </div>
+          <div className="p-4 rounded-lg bg-white border space-y-2">
+            <h1 className="text-sm font-medium text-slate-800">
+              Appointments Booked
+            </h1>
+            <h1 className="text-3xl font-bold text-green-600">
+              {data.metrics.booked}
+            </h1>
+          </div>
+
+          <div className="p-4 rounded-lg bg-white border space-y-2">
+            <h1 className="text-sm font-medium text-slate-800">
+              Appointments Attended
+            </h1>
+            <h1 className="text-3xl font-bold text-green-600">
+              {data.metrics.completed}
+            </h1>
           </div>
         </div>
-      ))}
+      ) : isLoading ? (
+        <Spinner />
+      ) : (
+        <p className="text-slate-600 text-sm">
+          No upcoming appointments. You can find tutors{" "}
+          <NavLink href="/search" variant="green">
+            here.
+          </NavLink>
+        </p>
+      )}
     </div>
   );
+}
+
+function RecentItems() {
+  const { data: recentAppointments } =
+    api.appointment.getRecentCompletedAppointments.useQuery({ take: 3 });
+  const { data: recentMessages } = api.messages.getConversations.useQuery({
+    take: 3,
+  });
+
+  /*
+   * If the data returned is less than length 3 then we return some empty cells to maintain consistent grid 3x2 shape.
+   */
+  const fillCells = React.useCallback(
+    (item: any[], max: number, container: "appointments" | "messages") => {
+      const cells: JSX.Element[] = [];
+      if (item.length === 0)
+        return [
+          <p key={container}>No items found</p>,
+          ...Array.from({ length: max - 1 }, (_, i) => (
+            <div key={i + container} />
+          )),
+        ];
+
+      for (let i = 0; i < max; ++i) {
+        if (item[i])
+          cells.push(
+            container === "appointments" ? (
+              <div
+                key={item[i].id}
+                className="bg-white flex flex-wrap items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-1 hover:shadow-lg duration-200"
+              >
+                <AppointmentItem {...item[i]} image />
+              </div>
+            ) : (
+              <div
+                key={i}
+                className="bg-white flex items-center gap-4 p-[1.1rem] shadow-md rounded-lg cursor-pointer hover:shadow-lg border-slate-200 border hover:border hover:border-green-400 duration-200"
+              >
+                <ConversationContent conversation={item[i]} />{" "}
+              </div>
+            )
+          );
+        else cells.push(<div key={i + container + 10} />);
+      }
+
+      return cells;
+    },
+    []
+  );
+
+  return recentAppointments && recentMessages ? (
+    <div className="space-y-4">
+      <div className="hidden md:flex items-center gap-8">
+        <Heading link={{ href: "/profile/appointments", text: "All tutors" }}>
+          Recent Appointments
+        </Heading>
+        <Heading link={{ href: "/profile/messages", text: "All tutors" }}>
+          Recent Tutors
+        </Heading>
+      </div>
+      <div className="grid grid-cols-1 grid-rows-8 md:grid-cols-2 md:grid-rows-3 gap-y-4 gap-x-8 grid-flow-col">
+        <div className="flex self-center md:hidden">
+          <Heading
+            link={{ href: "/profile/appointments", text: "All appointments" }}
+          >
+            Recent Appointments
+          </Heading>
+        </div>
+
+        {fillCells(recentAppointments, 3, "appointments").map(
+          (item: any) => item
+        )}
+        <div className=" flex self-center md:hidden">
+          <Heading link={{ href: "/profile/messages", text: "All tutors" }}>
+            Recent Tutors
+          </Heading>
+        </div>
+        {fillCells(recentMessages, 3, "messages").map((item: any) => item)}
+      </div>
+    </div>
+  ) : null;
 }
 
 function Cal() {
-
   return (
     <div className="space-y-4">
       <Heading>Calendar</Heading>
-      <Calendar dropdown controls/>
+      <Calendar dropdown controls />
     </div>
   );
 }
@@ -139,19 +188,16 @@ function Dashboard({ session }: WithSession) {
   return (
     <ProfileLayout session={session}>
       <div className="space-y-8">
-        <Banner
+        {/*<Banner
           heading="Action Needed!"
           variant="warning"
           text="No payment method found for your account. Please add one now."
           button="Add payment option"
           href="/auth/payment"
           closable
-        />
-        <UpcomingAppointment />
-        <div className="flex gap-8 md:flex-row flex-col">
-          <RecentAppointments />
-          <RecentTutors />
-        </div>
+        />*/}
+        <Metrics />
+        <RecentItems />
       </div>
 
       <Cal />

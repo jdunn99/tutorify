@@ -300,7 +300,7 @@ function CalendarSlotWithEvents({
       )}
 
       {controls && (
-        <p className="text-sm text-slate-600 font-medium">
+        <p className="text-sm text-slate-600 font-medium hidden md:block">
           {events[formattedDate]} events
         </p>
       )}

@@ -5,9 +5,25 @@ import { Footer } from "./footer";
 import { Navbar, ProfileNavbar } from "./navbar";
 import { Sidebar } from "./sidebar";
 
-export function Container({ children }: { children: React.ReactNode }) {
+const CONTAINER_SIZES = {
+  base: "py-6 px-8 space-y-4",
+  small: "p-4 space-y-4",
+};
+
+export function Container({
+  heading,
+  children,
+  size = "base",
+}: {
+  heading?: string;
+  children?: React.ReactNode;
+  size?: keyof typeof CONTAINER_SIZES;
+}) {
   return (
-    <div className="mx-auto p-24 bg-white overflow-x-hidden sm:px-6 md:px-8 max-w-screen-lg">
+    <div className={`rounded-lg ${CONTAINER_SIZES[size]} border  bg-white `}>
+      {heading ? (
+        <h1 className="text-xl text-green-600 font-bold">{heading}</h1>
+      ) : null}
       {children}
     </div>
   );
@@ -28,9 +44,7 @@ export function Layout({
   const height = navbar ? "h-[calc(100vh-73px)]" : "h-screen";
 
   return (
-    <div
-      className={`${height} overflow-y-hidden bg-slate-50`}
-    >
+    <div className={`${height} overflow-y-hidden bg-slate-50`}>
       <div className="h-full overflow-y-auto ">
         <section className={className}>
           {children}

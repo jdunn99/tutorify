@@ -72,7 +72,7 @@ export const tutorRouter = router({
 
       return await prisma.user.findUnique({
         where: { id },
-        include: { tutorProfile: true },
+        include: { tutorProfile: { include: { subjects: true } } },
       });
     }),
 
@@ -143,10 +143,16 @@ export const tutorRouter = router({
       const result = await prisma.tutor.findMany({
         select: {
           id: true,
+          headline: true,
+          biography: true,
           hourlyRate: true,
+          subjects: {
+            select: { name: true },
+          },
           user: {
             select: {
               name: true,
+              id: true,
             },
           },
           _count: {
@@ -175,7 +181,6 @@ export const tutorRouter = router({
         },
       });
 
-      console.log(result);
       return result;
     }),
 

@@ -2,7 +2,7 @@ import { FieldConfig } from "@/utils/hooks/useFormReducer";
 import React from "react";
 
 const style =
-  "g-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block p-2.5";
+  "border border-slate-300 text-slate-800 sm:text-sm rounded-lg block p-2.5";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   children?: React.ReactNode;
@@ -167,9 +167,9 @@ export function DropdownInput({
     <label htmlFor={name} className="text-sm flex-1 block w-full font-semibold">
       {label}
       <select
-        className={`mt-2 font-normal w-full p-2 ${
+        className={`${style} ${
           error ? "border border-red-500" : ""
-        }`}
+        } bg-white w-full mt-2`}
         value={value.toString().length === 0 ? "none" : value.toString()}
         onChange={onChange}
         name={name}

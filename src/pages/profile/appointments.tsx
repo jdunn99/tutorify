@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/avatar";
 import { Calendar } from "@/components/calendar";
 import {
   Dropdown,
@@ -9,6 +10,7 @@ import { Spinner } from "@/components/loading";
 import { api } from "@/utils/api";
 import withAuthHOC, { WithSession } from "@/utils/auth";
 import { useDateRange } from "@/utils/hooks/useDate";
+import { getInitials } from "@/utils/initials";
 import { Appointment, AppointmentStatus } from "@prisma/client";
 import Image from "next/image";
 import React from "react";
@@ -103,13 +105,9 @@ export function AppointmentItem(appointment: AppointmentItemProps) {
     <React.Fragment>
       <div className="flex items-center gap-6">
         {image ? (
-          <Image
-            alt="Profile Image"
-            className="rounded-lg flex"
-            src="https://randomuser.me/api/portraits/men/6.jpg"
-            height={64}
-            width={64}
-          />
+          <Avatar src={tutor.user.image} size="lg">
+            {getInitials(tutor.user.name)}
+          </Avatar>
         ) : null}
 
         <div>
@@ -170,7 +168,7 @@ function Appointments({ session }: WithSession) {
       <Heading>
         {date.length > 0 ? `Appointments - ${date}` : "Appointments"}
       </Heading>
-      <div className="flex items-center justify-center gap-8 flex-col-reverse sm:flex-row">
+      <div className="flex items-start justify-center gap-8 flex-col-reverse sm:flex-row">
         {appointments ? (
           <div className="space-y-2 max-h-[calc(100vh-250px)] flex-1 overflow-y-auto">
             {appointments.map((item) => (
@@ -178,7 +176,7 @@ function Appointments({ session }: WithSession) {
                 key={item.id}
                 className="bg-white flex items-center justify-between shadow-md rounded-lg border border-slate-200 px-6 py-1 hover:shadow-lg duration-200"
               >
-                <AppointmentItem {...(item as AppointmentItemProps)} />
+                <AppointmentItem {...(item as AppointmentItemProps)} image />
               </div>
             ))}
           </div>

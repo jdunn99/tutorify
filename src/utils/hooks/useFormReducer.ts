@@ -219,7 +219,8 @@ function reducer(state: FormState, action: Action): FormState {
  * @param {T} schema - The Zod schema used to validate the form.
  */
 export function useForm<T extends z.ZodObject<any>>(schema: T, key?: string) {
-  const [state, dispatch] = React.useReducer(reducer, useParsedState(schema));
+  const parsedState = useParsedState(schema);
+  const [state, dispatch] = React.useReducer(reducer, parsedState);
 
   React.useEffect(() => {
     if (typeof key !== "undefined")
@@ -256,5 +257,12 @@ export function useForm<T extends z.ZodObject<any>>(schema: T, key?: string) {
     return { result };
   }
 
-  return { state, dispatch, onChange, validate: validateSchema };
+  function reset() {
+    dispatch({
+      type: "RESET_FORM",
+      payload: { initialState: parsedState },
+    });
+  }
+
+  return { state, dispatch, onChange, reset, validate: validateSchema };
 }

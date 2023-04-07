@@ -25,7 +25,8 @@ model User {
     updatedAt     DateTime      @updatedAt
     tutorProfile  Tutor?
     appointments  Appointment[]
-    messages       Message[]
+    messages      Message[]
+    reviews       Review[]
 }
 
 model Account {
@@ -86,7 +87,8 @@ model Tutor {
     updatedAt             DateTime          @updatedAt
     resume                String?
     applicationStatus     ApplicationStatus @default(welcome)
-    messages               Message[]
+    messages              Message[]
+    reviews               Review[]
 }
 
 model Education {
@@ -180,6 +182,21 @@ model Message {
 
     @@index([studentId])
     @@index([tutorId])
+}
+
+model Review {
+    id        String   @id @default(cuid())
+    rating    Float
+    tutor     Tutor    @relation(fields: [tutorId], references: [id])
+    tutorId   String
+    student   User     @relation(fields: [studentId], references: [id])
+    studentId String
+    message   String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([tutorId])
+    @@index([studentId])
 }
 
 model VerificationToken {

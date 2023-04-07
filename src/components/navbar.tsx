@@ -1,6 +1,7 @@
 import _app from "@/pages/_app";
 import { api } from "@/utils/api";
 import { WithSession } from "@/utils/auth";
+import { getInitials } from "@/utils/initials";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import {
   MdPayment,
   MdSettings,
 } from "react-icons/md";
+import { Avatar } from "./avatar";
 import { Badge, IconBadge } from "./badge";
 import { Button, ButtonLink } from "./button";
 import {
@@ -120,13 +122,9 @@ export function AvatarMenu({ session }: WithSession) {
   return (
     <Dropdown
       heading={
-        <Image
-          alt="Profile Image"
-          className="rounded-full"
-          src="https://randomuser.me/api/portraits/men/6.jpg"
-          height={40}
-          width={40}
-        />
+        <Avatar src={session.user.image} className="!rounded-full">
+          {getInitials(session.user.name || "")}
+        </Avatar>
       }
     >
       <DropdownContent align="start" sideOffset={4}>

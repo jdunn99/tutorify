@@ -4,6 +4,7 @@ import { Calendar } from "@/components/calendar";
 import { NavLink } from "@/components/links";
 import { Spinner } from "@/components/loading";
 import { ProfileNavbar } from "@/components/navbar";
+import { ConversationContent } from "@/components/profile/conversation";
 import { Sidebar } from "@/components/sidebar";
 import { api } from "@/utils/api";
 import withAuthHOC, { type WithSession } from "@/utils/auth";
@@ -14,7 +15,6 @@ import { MdArrowRightAlt, MdCalendarMonth } from "react-icons/md";
 import { RxClock } from "react-icons/rx";
 import { Heading, ProfileLayout } from ".";
 import { AppointmentItem } from "./appointments";
-import { ConversationContent } from "./messages";
 
 export const STATIC_RECENT_APPOINTMENTS = [
   {
@@ -130,7 +130,7 @@ function RecentItems() {
                 key={i}
                 className="bg-white flex items-center gap-4 p-[1.1rem] shadow-md rounded-lg cursor-pointer hover:shadow-lg border-slate-200 border hover:border hover:border-green-400 duration-200"
               >
-                <ConversationContent conversation={item[i]} />{" "}
+                <ConversationContent {...item[i]} />{" "}
               </div>
             )
           );

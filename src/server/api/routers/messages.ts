@@ -1,5 +1,35 @@
 import { protectedProcedure, router } from "@/server/api/trpc";
+import type { Message, Tutor, User } from "@prisma/client";
 import { z } from "zod";
+
+export type ConversationUser = Pick<User, "id" | "name" | "image">;
+export type ConversationTutor = Pick<Tutor, "id"> & { user: ConversationUser };
+export type Conversation = Message & {
+  student: ConversationUser;
+  tutor: ConversationTutor;
+};
+
+const CONVERSATION_SELECT_ARGS = {
+  student: {
+    select: {
+      id: true,
+      name: true,
+      image: true,
+    },
+  },
+  tutor: {
+    select: {
+      id: true,
+      user: {
+        select: {
+          id: true,
+          image: true,
+          name: true,
+        },
+      },
+    },
+  },
+};
 
 export const messagesRouter = router({
   getConversations: protectedProcedure
@@ -8,16 +38,19 @@ export const messagesRouter = router({
       const { prisma, session } = ctx;
 
       const { take } = input || {};
+      const distinct = session.user.role === "USER" ? "tutorId" : "studentId";
 
-      return await prisma.message.findMany({
-        distinct: ["tutorId"],
+      return (await prisma.message.findMany({
+        distinct,
         where: {
           OR: [
             {
               studentId: session.user.id,
             },
             {
-              tutorId: session.user.id,
+              tutor: {
+                userId: session.user.id,
+              },
             },
           ],
         },
@@ -25,23 +58,8 @@ export const messagesRouter = router({
         orderBy: {
           createdAt: "desc",
         },
-        select: {
-          id: true,
-          message: true,
-          createdAt: true,
-          tutor: {
-            select: {
-              id: true,
-              user: {
-                select: {
-                  image: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
+        include: CONVERSATION_SELECT_ARGS,
+      })) as Conversation[];
     }),
 
   getMessagesForConversation: protectedProcedure
@@ -52,9 +70,18 @@ export const messagesRouter = router({
 
       return await prisma.message.findMany({
         where: {
-          AND: [{ studentId: session.user.id }, { tutorId: partner }],
+          OR: [
+            { AND: [{ studentId: session.user.id }, { tutorId: partner }] },
+            {
+              AND: [
+                { studentId: partner },
+                { tutor: { userId: session.user.id } },
+              ],
+            },
+          ],
         },
         orderBy: { createdAt: "desc" },
+        include: CONVERSATION_SELECT_ARGS,
       });
     }),
 
@@ -75,7 +102,7 @@ export const messagesRouter = router({
           },
           tutor: {
             connect: {
-              id: session.user.role === "USER" ? partner : session.user.id,
+              userId: session.user.role === "USER" ? partner : session.user.id,
             },
           },
         },

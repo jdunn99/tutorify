@@ -31,8 +31,9 @@ export function Heading({ link, children }: HeadingProps) {
 export function ProfileLayout({
   children,
   padding=true,
+  footer=true,
   session,
-}: { children?: React.ReactNode; padding?: boolean } & WithSession) {
+}: { children?: React.ReactNode; padding?: boolean, footer?:boolean} & WithSession) {
   const router = useRouter();
 
   const heading = React.useMemo(() => {
@@ -55,7 +56,7 @@ export function ProfileLayout({
           <div className="h-full overflow-y-auto ">
             <section className={className}>
               {children}
-              <Footer />
+              {footer ? <Footer /> : null}
             </section>
           </div>
         </div>

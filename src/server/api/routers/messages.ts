@@ -54,6 +54,7 @@ export const messagesRouter = router({
         where: {
           AND: [{ studentId: session.user.id }, { tutorId: partner }],
         },
+        orderBy: { createdAt: "desc" },
       });
     }),
 
@@ -82,6 +83,58 @@ export const messagesRouter = router({
     }),
 
   edit: protectedProcedure
+    .input(z.object({ id: z.string().cuid(), message: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { prisma, session } = ctx;
+      const { id, message } = input;
+
+      const currentMessage = await prisma.message.findUnique({
+        where: { id },
+        select: { studentId: true, tutorId: true },
+      });
+
+      if (!currentMessage) throw new Error();
+
+      // Check if the user trying to update the message is the student or tutor
+      if (
+        currentMessage.studentId !== session.user.id ||
+        currentMessage.tutorId !== session.user.id
+      ) {
+        throw new Error("You do not have permission to update this message.");
+      }
+
+      // Update the message
+      return await prisma.message.update({
+        where: { id },
+        data: { message },
+      });
+    }),
+
+  delete: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
-    .mutation(async ({ ctx, input }) => {}),
+    .mutation(async ({ ctx, input }) => {
+      const { prisma, session } = ctx;
+      const { id } = input;
+
+      const currentMessage = await prisma.message.findUnique({
+        where: { id },
+        select: { studentId: true, tutorId: true },
+      });
+
+      // TODO: Sent by check ?
+
+      if (!currentMessage) throw new Error();
+
+      // Check if the user trying to update the message is the student or tutor
+      if (
+        currentMessage.studentId !== session.user.id ||
+        currentMessage.tutorId !== session.user.id
+      ) {
+        throw new Error("You do not have permission to delete this message.");
+      }
+
+      return await prisma.message.delete({
+        where: { id },
+      });
+    }),
 });

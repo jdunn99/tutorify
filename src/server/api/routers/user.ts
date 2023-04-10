@@ -6,9 +6,11 @@ import {
   publicProcedure,
   protectedProcedure,
 } from "@/server/api/trpc";
-import { Role } from "@prisma/client";
+import { Role, User } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { env } from "@/env.mjs";
+
+export type UserNameImage = Pick<User, "id" | "name" | "image">;
 
 export const userRouter = router({
   get: adminProtectedProcedure.query(async ({ ctx }) => {

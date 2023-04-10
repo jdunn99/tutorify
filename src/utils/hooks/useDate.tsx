@@ -28,20 +28,20 @@ export function useDateRange(start: Date, end: Date) {
       day: "numeric",
     });
 
-    const startTime = start.toLocaleString("en-US", {
+    const startTime = start?.toLocaleString("en-US", {
       hour: "numeric",
       minute: "numeric",
       hour12: true,
     });
 
-    const endTime = end.toLocaleString("en-US", {
+    const endTime = end?.toLocaleString("en-US", {
       hour: "numeric",
       minute: "numeric",
       hour12: true,
     });
 
-    return { day, startTime, endTime }
+    return { day, startTime, endTime };
   }, [start, end]);
 
-  return { day, startTime, endTime }
+  return { day, startTime, endTime };
 }

@@ -6,6 +6,7 @@ export const AVATAR_SIZES = {
   base: { width: 40, height: 40 },
   lg: { width: 48, height: 48 },
   xl: { width: 56, height: 56 },
+  profile: { width: 96, height: 96 },
 };
 
 interface AvatarProps {

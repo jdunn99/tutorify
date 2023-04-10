@@ -27,6 +27,7 @@ model User {
     appointments  Appointment[]
     messages      Message[]
     reviews       Review[]
+    conversations Participant[]
 }
 
 model Account {
@@ -63,7 +64,7 @@ model Tutor {
     user                  User              @relation(fields: [userId], references: [id])
     userId                String            @unique
     hourlyRate            Float?            @default(0)
-    biography             String?
+    biography             String?           @db.Text
     headline              String?
     subjects              Subject[]
     appointments          Appointment[]
@@ -87,8 +88,8 @@ model Tutor {
     updatedAt             DateTime          @updatedAt
     resume                String?
     applicationStatus     ApplicationStatus @default(welcome)
-    messages              Message[]
     reviews               Review[]
+    averageRating         Float?
 }
 
 model Education {
@@ -161,7 +162,6 @@ model Appointment {
     end         DateTime
     price       Float
     status      AppointmentStatus @default(SCHEDULED)
-    // payment      Payment?
     createdAt   DateTime          @default(now())
     updatedAt   DateTime          @updatedAt
 
@@ -170,18 +170,40 @@ model Appointment {
     @@index([subjectId])
 }
 
-model Message {
-    id        String        @id @default(cuid())
-    student   User          @relation(fields: [studentId], references: [id])
-    studentId String
-    tutor     Tutor         @relation(fields: [tutorId], references: [id])
-    tutorId   String
-    createdAt DateTime      @default(now())
-    message   String        @db.Text
-    sentBy    MessageSentBy
+model Conversation {
+    id              String        @id @default(cuid())
+    createdAt       DateTime      @default(now())
+    participants    Participant[]
+    messages        Message[]
+    latestMessage   Message?      @relation(name: "latestMessage", fields: [latestMessageId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+    latestMessageId String?       @unique
+}
 
-    @@index([studentId])
-    @@index([tutorId])
+model Participant {
+    id                String       @id @default(cuid())
+    user              User         @relation(fields: [userId], references: [id])
+    userId            String
+    conversation      Conversation @relation(fields: [conversationId], references: [id])
+    readNewestMessage Boolean      @default(false)
+    conversationId    String
+
+    @@index([conversationId])
+    @@index([userId])
+}
+
+model Message {
+    id              String        @id @default(cuid())
+    message         String        @db.Text
+    sentBy          User          @relation(fields: [sentById], references: [id])
+    sentById        String
+    conversation    Conversation  @relation(fields: [conversationId], references: [id])
+    conversationId  String
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+    isLatestMessage Conversation? @relation("latestMessage")
+
+    @@index([sentById])
+    @@index([conversationId])
 }
 
 model Review {

@@ -1,6 +1,8 @@
 import { Button, ButtonLink } from "@/components/button";
+import { days } from "@/components/calendar";
 import { Dropdown, DropdownContent, DropdownItem } from "@/components/dropdown";
 import { Footer } from "@/components/footer";
+import { Input } from "@/components/input";
 import { Spinner } from "@/components/loading";
 import { Navbar } from "@/components/navbar";
 import { Search } from "@/components/search";
@@ -165,10 +167,25 @@ export default function SearchPage() {
 
   return (
     <div className="h-screen overflow-y-hidden bg-slate-50">
-      <div className="flex  h-full overflow-y-auto flex-col">
+      <div className="flex h-full overflow-y-auto flex-col">
         <Navbar />
         <main>
-          <section className="mx-auto items-start flex  max-w-3xl px-4 sm:px-6 lg:px-8 py-12 gap-8">
+          <section className="mx-auto items-start flex  max-w-5xl px-4 sm:px-6 lg:px-8 py-12 gap-8">
+            <div className="flex-[0.3] space-y-2">
+              <h3 className="text-xl text-slate-800">Filters</h3>
+              <div className="space-y-1">
+                <div className="text-slate-800 font-semibold">Availability</div>
+                {days.map((day) => (
+                  <label key={day} className="block text-slate-600 text-sm">
+                    <input
+                      className="mr-2 accent-green-600"
+                      type="checkbox"
+                    />
+                    {day}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="flex-1">
               <span className="text-sm font-semibold ">Subject</span>
               <Search />

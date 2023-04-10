@@ -156,14 +156,16 @@ export const appointmentRouter = router({
   getCountForMonth: protectedProcedure.query(async ({ ctx }) => {
     const { prisma, session } = ctx;
 
-    const result = (await prisma.$queryRaw`
+    const result = await prisma.$queryRaw<
+      Record<string, Record<string, number>>[]
+    >`
 SELECT JSON_OBJECTAGG(appointment_day, appointment_count) AS appointments
 FROM (
   SELECT DATE(start) AS appointment_day, COUNT(*) AS appointment_count
   FROM Appointment
   WHERE start >= '2023-03-01' AND start < '2023-05-01' AND studentId = ${session.user.id}
   GROUP BY DATE(start)
-) AS appointment_summary;`) satisfies Record<string, Record<string, number>>[];
+) AS appointment_summary;`;
 
     return result[0];
   }),
@@ -176,12 +178,29 @@ FROM (
       const { title, tutorId, price, start, end, subjectId, description } =
         input;
 
+      // when we create an appointment we also create a conversation
+      await prisma.conversation.create({
+        data: {
+          participants: {
+            createMany: {
+              data: [
+                { userId: session.user.id, readNewestMessage: false },
+                {
+                  userId: tutorId,
+                  readNewestMessage: false,
+                },
+              ],
+            },
+          },
+        },
+      });
+
       return await prisma.appointment.create({
         data: {
           title,
           tutor: {
             connect: {
-              id: tutorId,
+              userId: tutorId,
             },
           },
           student: {

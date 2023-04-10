@@ -24,7 +24,7 @@ import {
 } from "./dropdown";
 import { Spinner } from "./loading";
 
-const days = [
+export const days = [
   "Monday",
   "Tuesday",
   "Wednesday",

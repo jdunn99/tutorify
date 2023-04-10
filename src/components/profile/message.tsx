@@ -1,5 +1,6 @@
-import { Conversation } from "@/server/api/routers/messages";
+import { ConversationWithParticipants } from "@/pages/profile/messages";
 import { api } from "@/utils/api";
+import { WithSession } from "@/utils/auth";
 import { useForm } from "@/utils/hooks/useFormReducer";
 import { getInitials } from "@/utils/initials";
 import { Role } from "@prisma/client";
@@ -8,6 +9,7 @@ import { z } from "zod";
 import { Avatar } from "../avatar";
 import { Button, ButtonLink } from "../button";
 import { TextArea } from "../input";
+import { Spinner } from "../loading";
 
 export function MessageHeader({
   name,
@@ -16,12 +18,12 @@ export function MessageHeader({
 }: {
   name: string | null;
   id: string;
-    isTutor?: boolean;
+  isTutor?: boolean;
 }) {
   return (
     <div className="w-full border-b items-center flex px-6 py-4 justify-between">
       <h1 className="text-lg text-green-600 font-bold">{name}</h1>
-      {isTutor ? (
+      {!isTutor ? (
         <ButtonLink variant="open" href={`/tutor/${id}`}>
           View Profile
         </ButtonLink>
@@ -80,16 +82,16 @@ export function MessageItem({
 
 const schema = z.object({ message: z.string().min(1).max(255) });
 
-export function MessageInput({ partner }: { partner: string }) {
+export function MessageInput({ conversationId }: { conversationId: string }) {
   const { state, onChange, validate, reset } = useForm(schema);
 
   const ctx = api.useContext();
   const { mutateAsync: sendMessage } = api.messages.sendMessage.useMutation({
     onSuccess() {
       void ctx.messages.getMessagesForConversation.invalidate({
-        partner,
+        conversationId,
       });
-      void ctx.messages.getConversations.invalidate();
+      void ctx.conversation.getConversationsForUser.invalidate();
     },
   });
 
@@ -98,10 +100,8 @@ export function MessageInput({ partner }: { partner: string }) {
     const { result } = validate();
     if (typeof result === "undefined") return;
 
-    await sendMessage({
-      partner,
-      message: result.message,
-    });
+    await sendMessage({ message: result.message, conversationId });
+
     reset();
   }
 
@@ -141,3 +141,75 @@ export function MessageInput({ partner }: { partner: string }) {
   );
 }
 
+export function MessageContainer({
+  conversation,
+  session,
+}: {
+  conversation: ConversationWithParticipants;
+} & WithSession) {
+  const [partner] = conversation.participants;
+  const { id, name } = partner.user;
+
+  const { data: messages, isLoading } =
+    api.messages.getMessagesForConversation.useQuery({
+      conversationId: conversation.id,
+    });
+
+  if (isLoading)
+    return (
+      <div className="grid h-full place-items-center">
+        <Spinner />
+      </div>
+    );
+
+  return (
+    <React.Fragment>
+      <div className="w-full border-b items-center flex px-6 py-4 justify-between">
+        <h1 className="text-lg text-green-600 font-bold">{name}</h1>
+        {session.user.role === "USER" ? (
+          <ButtonLink variant="open" href={`/tutor/${id}`}>
+            View Profile
+          </ButtonLink>
+        ) : null}
+      </div>
+
+      <div className="overflow-auto max-h-full px-6 py-4 flex gap-4 flex-col-reverse">
+        {typeof messages !== "undefined" ? (
+          messages.length > 0 ? (
+            <div>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex flex-col ${
+                    session.user.id === message.sentById
+                      ? "items-end"
+                      : "items-start"
+                  } gap-2`}
+                >
+                  <div
+                    className={`flex items-start gap-2 ${
+                      session.user.id === message.sentById
+                        ? "flex-row-reverse"
+                        : "flex-row"
+                    }`}
+                  >
+                    <Avatar src={message.sentBy.image}>
+                      {getInitials(message.sentBy.name)}
+                    </Avatar>
+                    <p className="text-sm font-medium bg-green-200 p-2 rounded-lg text-green-800 max-w-xl">
+                      {message.message}
+                    </p>
+                  </div>
+                  <p className="text-xs font-medium text-slate-600">
+                    {message.createdAt.toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null
+        ) : null}
+      </div>
+      <MessageInput conversationId={conversation.id} />
+    </React.Fragment>
+  );
+}

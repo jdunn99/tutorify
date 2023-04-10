@@ -76,8 +76,6 @@ export const tutorRouter = router({
       });
     }),
 
-  // Get tutors based on a given Subject. @all
-  // Not really useful for now, but will eventually be turned into a method for matching tutors to students.
   getBySubject: publicProcedure
     .input(z.object({ name: z.string().nonempty() }))
     .query(async ({ input, ctx }) => {
@@ -99,48 +97,7 @@ export const tutorRouter = router({
       const { prisma } = ctx;
       const { query } = input;
 
-      /*
-    const tutors = await prisma.tutor.findMany({
-  where: {
-    AND: [
-      {
-        status: 'ACTIVE',
-      },
-      {
-        OR: [
-          {
-            subjects: {
-              some: {
-                name: {
-                  contains: searchQuery,
-                },
-              },
-            },
-          },
-          {
-            biography: {
-              contains: searchQuery,
-            },
-          },
-        ],
-      },
-    ],
-  },
-  orderBy: [
-    {
-      appointments: {
-        count: 'desc',
-      },
-    },
-    {
-      review: {
-        avg: 'desc',
-      },
-    },
-  ],
-});*/
-
-      const result = await prisma.tutor.findMany({
+      return await prisma.tutor.findMany({
         select: {
           id: true,
           headline: true,
@@ -149,6 +106,7 @@ export const tutorRouter = router({
           subjects: {
             select: { name: true },
           },
+          reviews: true,
           user: {
             select: {
               name: true,
@@ -180,19 +138,69 @@ export const tutorRouter = router({
           },
         },
       });
-
-      return result;
     }),
 
-  getProfile: publicProcedure
-    .input(z.object({ id: z.string().cuid() }))
-    .query(async ({ ctx, input }) => {
-      const { prisma } = ctx;
-      const { id } = input;
+  getApplicationProgress: protectedProcedure.query(async ({ ctx }) => {
+    const { prisma, session } = ctx;
+    const { user } = session;
 
-      return await prisma.tutor.findUnique({
-        where: { id },
-        include: { user: true },
+    return await prisma.tutor.findUnique({
+      where: { userId: user.id },
+      select: { applicationStatus: true },
+    });
+  }),
+
+  updateApplication: protectedProcedure
+    .input(
+      z.object({
+        applicationStatus: z.nativeEnum(ApplicationStatus),
+        subjects: z.string().cuid().array().min(1).max(5).optional(),
+        basicInfo: BasicInfo.optional(),
+        profile: Profile.optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { applicationStatus, subjects, basicInfo, profile } = input;
+      const { prisma, session } = ctx;
+      const { user } = session;
+
+      const { location, ...rest } = basicInfo || {};
+      const { employment, education, ...profileData } = profile || {};
+
+      return await prisma.tutor.update({
+        where: { userId: user.id },
+        data: {
+          applicationStatus,
+          subjects:
+            typeof subjects !== "undefined"
+              ? {
+                  set: [],
+                  connect: subjects.map((id) => ({ id })),
+                }
+              : undefined,
+          location:
+            typeof location !== "undefined"
+              ? {
+                  create: location,
+                }
+              : undefined,
+
+          education:
+            typeof education !== "undefined"
+              ? {
+                  create: education,
+                }
+              : undefined,
+          employment:
+            typeof employment !== "undefined"
+              ? {
+                  create: employment as any,
+                }
+              : undefined,
+
+          ...rest,
+          ...profileData,
+        },
       });
     }),
 

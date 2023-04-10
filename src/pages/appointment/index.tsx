@@ -55,7 +55,7 @@ function Appointment({
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
     await createAppointment({
-      tutorId: tutor!.tutorProfile!.id!,
+      tutorId: tutor!.id,
       studentId: session.user.id,
       subjectId: subject,
       description,

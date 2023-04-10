@@ -9,41 +9,13 @@ import { Sidebar } from "@/components/sidebar";
 import { api } from "@/utils/api";
 import withAuthHOC, { type WithSession } from "@/utils/auth";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 import { MdArrowRightAlt, MdCalendarMonth } from "react-icons/md";
 import { RxClock } from "react-icons/rx";
 import { Heading, ProfileLayout } from ".";
 import { AppointmentItem } from "./appointments";
-
-export const STATIC_RECENT_APPOINTMENTS = [
-  {
-    name: "Bilbo Baggins",
-    title: "Math Tutoring",
-    day: "Mar 29",
-    date: new Date("2023-03-29T10:00:00.000Z"),
-  },
-];
-const STATIC_RECENT_TUTORS = [
-  {
-    name: "Bilbo Baggins",
-    day: "Mar 29",
-    message:
-      "I know that coming down was a pain in the butt, but thank you for visiting me I am so happy that you have...",
-  },
-  {
-    name: "Bilbo Baggins",
-    day: "Mar 29",
-    message:
-      "I know that coming down was a pain in the butt, but thank you for visiting me I am so happy that you have...",
-  },
-  {
-    name: "Bilbo Baggins",
-    day: "Mar 29",
-    message:
-      "I know that coming down was a pain in the butt, but thank you for visiting me I am so happy that you have...",
-  },
-];
 
 function Metrics() {
   const { data, isLoading } = api.user.getMetricsForRegularUser.useQuery();
@@ -126,12 +98,13 @@ function RecentItems() {
                 <AppointmentItem {...item[i]} image />
               </div>
             ) : (
-              <div
+              <Link
+                href={`/profile/messages?conversation=${item[i].id}`}
                 key={i}
                 className="bg-white flex items-center gap-4 p-[1.1rem] shadow-md rounded-lg cursor-pointer hover:shadow-lg border-slate-200 border hover:border hover:border-green-400 duration-200"
               >
                 <ConversationContent {...item[i]} />{" "}
-              </div>
+              </Link>
             )
           );
         else cells.push(<div key={i + container + 10} />);

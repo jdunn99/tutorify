@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/badge";
 import { Button, ButtonLink } from "@/components/button";
 import { Calendar } from "@/components/calendar";
@@ -7,6 +8,7 @@ import { TutorCard } from "@/components/tutorCard";
 import { getServerAuthSession } from "@/server/auth";
 import { prisma } from "@/server/prisma";
 import { api } from "@/utils/api";
+import { getInitials } from "@/utils/initials";
 import { Education, Employment, Subject } from "@prisma/client";
 import type {
   GetServerSidePropsContext,
@@ -57,13 +59,9 @@ export function TutorHeading({
   return (
     <div className="flex items-start justify-between">
       <div className="flex gap-4 items-start">
-        <Image
-          alt="Profile Image"
-          className="rounded-xl flex self-start"
-          src="https://randomuser.me/api/portraits/men/6.jpg"
-          height={96}
-          width={96}
-        />
+        <Avatar src={image} size="profile">
+          {getInitials(name)}
+        </Avatar>
         <div className="flex flex-col flex-1 justify-between h-24">
           <div>
             <h2 className="text-xl font-bold text-green-600">{name}</h2>
@@ -144,7 +142,7 @@ function AboutSection({
           </Badge>
         ))}
       </div>
-      <p className="font-medium text-sm text-slate-600">{biography}</p>
+      <p className="text-sm text-slate-600 leading-loose">{biography}</p>
 
       <h1 className="text-lg text-green-600 font-bold">Education</h1>
       <EducationExperienceItem
@@ -214,6 +212,9 @@ function TutorProfile({
   id,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const { location, employment, education, subjects, user, _count } = profile;
+  const { data: reviews } = api.reviews.getReviewsForTutor.useQuery({
+    id: profile.id,
+  });
   const [date, setDate] = React.useState<Date>(new Date());
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -243,7 +244,7 @@ function TutorProfile({
     <Layout navbar={false}>
       <Navbar />
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
-        {JSON.stringify(query)}
+        {JSON.stringify(reviews)}
         <TutorHeading
           onClick={scroll}
           state={location!.state}
@@ -272,9 +273,13 @@ function TutorProfile({
                   <ButtonLink
                     aria-disabled="true"
                     variant="open"
-                    href={`/appointment?day=${date.toISOString().substring(0,10)}&time=${timeSlot}&tutorId=${id}`}
+                    href={`/appointment?day=${date
+                      .toISOString()
+                      .substring(0, 10)}&time=${timeSlot}&tutorId=${id}`}
                     key={timeSlot}
-                    className={`p-2 rounded-lg border ${session === null ? "pointer-events-none" : ""} ${
+                    className={`p-2 rounded-lg border ${
+                      session === null ? "pointer-events-none" : ""
+                    } ${
                       slot === timeSlot
                         ? "bg-green-200 text-green-600 font-semibold border-green-500 shadow-lg"
                         : ""

@@ -1,112 +1,62 @@
 import { protectedProcedure, router } from "@/server/api/trpc";
-import type { Message, Tutor, User } from "@prisma/client";
+import type { Message, Session, Tutor } from "@prisma/client";
 import { z } from "zod";
-
-export type ConversationUser = Pick<User, "id" | "name" | "image">;
-export type ConversationTutor = Pick<Tutor, "id"> & { user: ConversationUser };
-export type Conversation = Message & {
-  student: ConversationUser;
-  tutor: ConversationTutor;
-};
-
-const CONVERSATION_SELECT_ARGS = {
-  student: {
-    select: {
-      id: true,
-      name: true,
-      image: true,
-    },
-  },
-  tutor: {
-    select: {
-      id: true,
-      user: {
-        select: {
-          id: true,
-          image: true,
-          name: true,
-        },
-      },
-    },
-  },
-};
+import { UserNameImage } from "./user";
 
 export const messagesRouter = router({
-  getConversations: protectedProcedure
-    .input(z.object({ take: z.number().optional() } || undefined))
-    .query(async ({ ctx, input }) => {
-      const { prisma, session } = ctx;
-
-      const { take } = input || {};
-      const distinct = session.user.role === "USER" ? "tutorId" : "studentId";
-
-      return (await prisma.message.findMany({
-        distinct,
-        where: {
-          OR: [
-            {
-              studentId: session.user.id,
-            },
-            {
-              tutor: {
-                userId: session.user.id,
-              },
-            },
-          ],
-        },
-        take,
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: CONVERSATION_SELECT_ARGS,
-      })) as Conversation[];
-    }),
-
   getMessagesForConversation: protectedProcedure
-    .input(z.object({ partner: z.string().cuid() }))
+    .input(z.object({ conversationId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
       const { prisma, session } = ctx;
-      const { partner } = input;
+      const { conversationId } = input;
 
       return await prisma.message.findMany({
         where: {
-          OR: [
-            { AND: [{ studentId: session.user.id }, { tutorId: partner }] },
-            {
-              AND: [
-                { studentId: partner },
-                { tutor: { userId: session.user.id } },
-              ],
+          conversation: {
+            id: conversationId,
+            participants: {
+              some: {
+                userId: session.user.id,
+              },
             },
-          ],
+          },
         },
-        orderBy: { createdAt: "desc" },
-        include: CONVERSATION_SELECT_ARGS,
+        include: {
+          sentBy: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
       });
     }),
 
   sendMessage: protectedProcedure
-    .input(z.object({ message: z.string(), partner: z.string().cuid() }))
+    .input(z.object({ message: z.string(), conversationId: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
       const { prisma, session } = ctx;
-      const { partner, message } = input;
+      const { message, conversationId } = input;
 
-      return await prisma.message.create({
+      const result = await prisma.message.create({
         data: {
+          conversationId,
           message,
-          sentBy: session.user.role === "USER" ? "STUDENT" : "TUTOR",
-          student: {
-            connect: {
-              id: session.user.role === "USER" ? session.user.id : partner,
-            },
-          },
-          tutor: {
-            connect: {
-              userId: session.user.role === "USER" ? partner : session.user.id,
-            },
-          },
+          sentById: session.user.id,
         },
       });
+
+      if (!result) throw new Error("something went wrong");
+
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          latestMessageId: result.id,
+        },
+      });
+
+      return result;
     }),
 
   edit: protectedProcedure

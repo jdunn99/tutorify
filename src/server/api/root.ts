@@ -5,6 +5,8 @@ import { availabilityRouter } from "./routers/availability";
 import { appointmentRouter } from "./routers/appointment";
 import { subjectRouter } from "./routers/subject";
 import { messagesRouter } from "./routers/messages";
+import { conversationRouter } from "./routers/conversation";
+import { reviewsRouter } from "./routers/review";
 
 export const appRouter = router({
   availability: availabilityRouter,
@@ -12,7 +14,9 @@ export const appRouter = router({
   subject: subjectRouter,
   tutor: tutorRouter,
   user: userRouter,
-  messages: messagesRouter
+  messages: messagesRouter,
+  conversation: conversationRouter,
+  reviews: reviewsRouter
 });
 
 export type AppRouter = typeof appRouter;

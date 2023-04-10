@@ -1,33 +1,26 @@
-import { Conversation } from "@/server/api/routers/messages";
+import { ConversationWithParticipants } from "@/pages/profile/messages";
 import { getInitials } from "@/utils/initials";
 import React from "react";
 import { Avatar } from "../avatar";
 
 export function ConversationContent({
-  message,
-  tutor,
-  student,
-  createdAt,
-  isTutor,
-}: Conversation & { isTutor?: boolean }) {
-  const { src, name } = React.useMemo(
-    () => ({
-      src: isTutor ? student.image : tutor.user.image,
-      name: isTutor ? student.name : tutor.user.name,
-    }),
-    [isTutor, student, tutor]
-  );
+  latestMessage,
+  participants,
+}: ConversationWithParticipants) {
+  const [partner] = participants;
+  const { name, image } = partner.user;
+  const { createdAt, message } = latestMessage || {};
 
   return (
     <React.Fragment>
-      <Avatar src={src} className="rounded-lg">
+      <Avatar src={image} className="rounded-lg">
         {getInitials(name)}
       </Avatar>
       <div className="flex-1">
         <div className="flex items-center flex-wrap justify-between w-full">
           <h4 className="text-slate-800 font-semibold text-lg">{name}</h4>
           <p className="text-green-600 font-medium text-xs">
-            {createdAt.toLocaleString()}
+            {createdAt?.toLocaleString()}
           </p>
         </div>
         <p
@@ -50,16 +43,14 @@ export function ConversationContent({
 const CONVERSATION_CONTAINER_CX =
   "bg-white flex items-center gap-4 p-4 cursor-pointer  border-y hover:border-y hover:border-green-400 hover:bg-green-50";
 interface ConversationContainerProps {
-  conversation: Conversation;
-  onClick(conversation: Conversation): void;
+  conversation: ConversationWithParticipants;
+  onClick(conversation: ConversationWithParticipants): void;
   isActive: boolean;
-  isTutor?: boolean;
 }
 export function ConversationContainer({
   onClick,
   isActive,
   conversation,
-  ...rest
 }: ConversationContainerProps) {
   return (
     <div
@@ -68,7 +59,7 @@ export function ConversationContainer({
         isActive ? "border-green-400 !bg-green-50" : "border-slate-200"
       }`}
     >
-      <ConversationContent {...conversation} {...rest} />
+      <ConversationContent {...conversation} />
     </div>
   );
 }
